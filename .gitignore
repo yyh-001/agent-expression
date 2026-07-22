@@ -13,8 +13,11 @@ venv/
 .vscode/
 meme-packs/
 memes/
+# ignore loose media dumps, keep marketing assets
 *.gif
-*.png
 *.jpg
 *.jpeg
 *.webp
+/*.png
+!assets/
+!assets/**

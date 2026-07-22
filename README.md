@@ -1,200 +1,116 @@
-# agent-expression
+<p align="center">
+  <img src="assets/cover.png" alt="agent-expression — 表情包 Skill" width="920" />
+</p>
 
-本地表情包 Skill：为 [Hermes Agent](https://hermes-agent.nousresearch.com/)（及其它聊天 Agent）提供 **检索 → 发图 → 识图入库** 完整管线。
+<h1 align="center">agent-expression</h1>
 
-支持 FTS 关键词检索，以及可选的向量语义检索（智谱 `embedding-3`）。  
-**本仓库不包含表情包图片**，请自备图包或使用开源素材。
+<p align="center">
+  <strong>让 Agent 会斗图。</strong><br/>
+  本地表情包检索 · 识图入库 · 一键 <code>MEDIA:</code> 发出去
+</p>
 
-[SKILL.md](./SKILL.md) · [MIT License](./LICENSE)
+<p align="center">
+  <a href="./SKILL.md"><img src="https://img.shields.io/badge/Hermes-Skill-amber?style=flat-square" alt="Hermes Skill" /></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="MIT" /></a>
+  <img src="https://img.shields.io/badge/Python-3.10+-blue?style=flat-square" alt="Python" />
+</p>
 
 ---
 
-## Features
+聊天 Agent 最容易翻车的地方：瞎编图片路径、`ls|shuf` 乱抽、发不出去。
 
-- **语义 / 关键词搜图**：口语化 query（如「想下班」「无语摸鱼」）→ 返回真实绝对路径
-- **识图入库**：视觉自动分类到 `happy` / `shy` / `sigh`…，写 caption，并可嵌入向量
-- **防瞎编路径**：约定只用脚本/工具输出的路径写 `MEDIA:`，禁止 `ls|shuf`
-- **CLI 可独立跑**：不依赖 Hermes 也能索引与检索
-- **可选 Hermes 原生工具**：`search_meme` / `add_meme`（见 [`hermes-tools/`](./hermes-tools/)）
-
-## How it works
+**agent-expression** 把表情包变成一条稳链路：
 
 ```text
-meme-packs/<id>/memes/<tag>/*.png|gif
-        │
-        ▼
- index-memes.py  ──►  SQLite (caption + FTS5)
-        │
-        ▼
- embed-memes.py  ──►  meme_embeddings（可选）
-        │
-        ▼
- search-meme.py / search_meme  ──►  MEDIA:/abs/path
+搜得到 → 路径真 → MEDIA 发出去
+学得会 → 识图分类 → 下次还能搜到
 ```
 
-入库路径：`classify-and-add-meme.py` / `add_meme` → 写入文件 + 索引（+ 向量）。
+> 本仓库是 **Skill + 脚本**，不含表情包图片。图包请自备，或用开源包。
 
-## Directory layout
-
-```text
-agent-expression/
-├── SKILL.md                 # Agent 行为约定（Hermes skill 入口）
-├── README.md                # 本文件
-├── LICENSE
-├── .env.example
-├── scripts/                 # CLI
-│   ├── search-meme.py
-│   ├── pick-meme.py
-│   ├── add-meme.py
-│   ├── classify-and-add-meme.py
-│   ├── index-memes.py
-│   ├── embed-memes.py
-│   ├── meme_db.py
-│   └── meme_embed.py
-├── references/              # Schema / 标签说明
-└── hermes-tools/            # 可选：Hermes 原生工具实现
-```
-
-## Requirements
-
-| 用途 | 依赖 |
-|------|------|
-| 基础索引 / FTS 检索 | Python 3.10+、标准库 + 本地 SQLite |
-| 向量检索（可选） | `numpy`；`ZHIPU_API_KEY`（智谱 embedding-3） |
-| Caption / 自动分类（可选） | OpenAI 兼容视觉 API（如火山 Ark / OpenAI） |
-
-密钥放在环境变量或 `${HERMES_HOME:-~/.hermes}/.env`，**不要提交到 Git**。参见 [`.env.example`](./.env.example)。
-
-## Install
-
-### Hermes（推荐）
+## 30 秒上手
 
 ```bash
+# 1. 安装
 hermes skills install yyh-001/agent-expression
-# 或聊天里：/skills install yyh-001/agent-expression
-```
+# 或：git clone https://github.com/yyh-001/agent-expression.git ~/.hermes/skills/media/agent-expression
 
-安装后 skill 通常位于：
+# 2. 放图包（示例开源包）
+# https://github.com/anka-afk/astrbot-meme-pack-official-01
+# → ~/.hermes/meme-packs/official-001/memes/<tag>/*
 
-```text
-~/.hermes/skills/media/agent-expression/
-```
-
-### 手动
-
-```bash
-git clone https://github.com/yyh-001/agent-expression.git \
-  ~/.hermes/skills/media/agent-expression
-```
-
-## Prepare a meme pack
-
-默认路径：
-
-```text
-~/.hermes/meme-packs/official-001/memes/<tag>/*.png|jpg|gif|webp
-```
-
-推荐开源包：[astrbot-meme-pack-official-01](https://github.com/anka-afk/astrbot-meme-pack-official-01)
-
-```bash
-mkdir -p ~/.hermes/meme-packs/official-001
-# 将上游仓库内容放到 official-001/，保证存在 memes/<tag>/ 结构
-```
-
-可用环境变量覆盖：
-
-| 变量 | 说明 |
-|------|------|
-| `HERMES_HOME` | 默认 `~/.hermes` |
-| `HERMES_MEME_PACK_ID` | 默认 `official-001` |
-| `HERMES_MEME_PACK` | 直接指定 pack 根目录 |
-
-标签说明见 [`references/categories.md`](./references/categories.md)。
-
-## Quick start
-
-```bash
-cd ~/.hermes/skills/media/agent-expression   # 或本仓库根目录
-
-# 1. 同步文件路径进 SQLite
+# 3. 索引 + 搜一张
+cd ~/.hermes/skills/media/agent-expression
 python3 scripts/index-memes.py --sync-only
-
-# 2. （可选）视觉打 caption —— 需要 vision API
-python3 scripts/index-memes.py --workers 2
-
-# 3. （可选）向量嵌入 —— 需要 ZHIPU_API_KEY
-python3 scripts/embed-memes.py
-python3 scripts/embed-memes.py --stats
-
-# 4. 检索
-python3 scripts/search-meme.py "无语 摸鱼" --pick -v
-python3 scripts/search-meme.py "想下班" -n 5 -v
-python3 scripts/pick-meme.py shy          # 按标签随机
-python3 scripts/search-meme.py --stats
+python3 scripts/search-meme.py "无语" --pick
 ```
 
-Agent 发图时只使用脚本 stdout 中的绝对路径：
+Agent 只贴返回路径：
 
 ```text
-摸鱼被我逮到了吧
-MEDIA:/absolute/path/to/meme.png
+行吧你赢了
+MEDIA:/abs/path/to/meme.png
 ```
 
-## Configuration
+## 它能干什么
 
-| 变量 | 用途 | 默认 |
-|------|------|------|
-| `ZHIPU_API_KEY` | 向量 embedding | （空则仅 FTS） |
-| `ZHIPU_EMBEDDING_MODEL` | 模型名 | `embedding-3` |
-| `ZHIPU_BASE_URL` | API 根路径 | `https://open.bigmodel.cn/api/paas/v4` |
-| `ARK_API_KEY` / `OPENAI_API_KEY` | 视觉 caption / 分类 | — |
+| | |
+|--|--|
+| **搜图** | 「想下班」「得意傲娇」——关键词或语义（可选向量） |
+| **入库** | 用户发来的图：识图分类 → caption → 可检索 |
+| **防翻车** | 禁止手写路径，禁止 `ls\|shuf` |
 
-Hermes 用户也可在 `config.yaml` → `auxiliary.vision` 配置视觉端点。
+可选：挂成 Hermes 原生工具 `search_meme` / `add_meme` → 见 [`hermes-tools/`](./hermes-tools/)。
 
-## Agent rules（摘要）
-
-完整约定见 **[SKILL.md](./SKILL.md)**。核心：
-
-1. **禁止**手写 / 猜测 `MEDIA:` 路径  
-2. **禁止** `ls|shuf|find` 自己挑图  
-3. 发图 → `search-meme.py` / `search_meme`  
-4. 入库 → `classify-and-add-meme.py` / `add_meme`  
-5. 失败 → 只回文字  
+## 一条命令对照
 
 ```bash
-# 入库示例
-python3 scripts/classify-and-add-meme.py /path/or/url
-python3 scripts/add-meme.py happy /path/or/url
+python3 scripts/search-meme.py "摸鱼" --pick -v     # 检索
+python3 scripts/pick-meme.py shy                    # 按标签随机
+python3 scripts/classify-and-add-meme.py ./x.gif    # 识图入库
+python3 scripts/index-memes.py --workers 2          # 打 caption（需视觉 API）
+python3 scripts/embed-memes.py                      # 向量化（需 ZHIPU_API_KEY）
 ```
 
-## Optional: Hermes native tools
+## 配置（按需）
 
-把检索/入库挂进模型工具列表（比 terminal 跑脚本更稳）：
+复制 [`.env.example`](./.env.example) 到 `~/.hermes/.env`：
 
-1. Skill 装到 `~/.hermes/skills/media/agent-expression/`
-2. 拷贝 `hermes-tools/*.py` → Hermes `tools/`
-3. 在 `toolsets.py` 加入 `search_meme`、`add_meme`
-4. 重启 gateway
+| 你要什么 | 配什么 |
+|----------|--------|
+| 只关键词搜 | 不用 key，跑 `--sync-only` 即可 |
+| 语义搜更准 | `ZHIPU_API_KEY` + `embed-memes.py` |
+| 自动写描述 / 入库分类 | 视觉 API（`ARK_API_KEY` 或 OpenAI 兼容） |
 
-细节：[hermes-tools/README.md](./hermes-tools/README.md)
+图包路径可用 `HERMES_MEME_PACK` / `HERMES_MEME_PACK_ID` 覆盖。  
+标签一览：[`references/categories.md`](./references/categories.md)
 
-## Pitfalls
+## Agent 三条铁律
 
-| 现象 | 处理 |
-|------|------|
-| `search-meme` 报 index not found | 先跑 `index-memes.py --sync-only` |
-| 向量不生效 / 仍走 FTS | 检查 `ZHIPU_API_KEY`，并跑 `embed-memes.py --stats` |
-| caption 为空、检索很差 | 配置 vision API 后跑 `index-memes.py` |
-| 手写路径被网关跳过 | 只用脚本返回的绝对路径；目录需含 `memes/` |
-| 入库 `EXISTS` | 同内容已存在（hash 去重），可直接用返回路径 |
+完整约定在 [**SKILL.md**](./SKILL.md)。
 
-## Credits
+1. 只用脚本/工具给出的绝对路径写 `MEDIA:`
+2. 不手写路径，不 `ls|shuf|find`
+3. 搜失败就回文字，别硬发
 
-- 表情包素材建议来源：[anka-afk/astrbot-meme-pack-official-01](https://github.com/anka-afk/astrbot-meme-pack-official-01)（请遵守其许可）
-- 面向 [Hermes Agent](https://github.com/NousResearch/hermes-agent) skill 体系
+## 仓库结构
 
-## License
+```text
+SKILL.md          Agent 说明书
+scripts/          CLI（检索 / 索引 / 入库 / 嵌入）
+hermes-tools/     可选原生工具
+references/       Schema & 标签
+assets/cover.png  宣传图
+```
 
-本仓库代码与文档为 [MIT](./LICENSE)。  
-**图片素材版权归原作者 / 来源仓库**，本项目不附带、不授权图包内容。
+## 常见问题
+
+**搜不到？** 先 `index-memes.py --sync-only`；要语义再 `embed-memes.py`。  
+**路径被跳过？** 必须是真实存在的绝对路径，且在 `memes/` 下。  
+**入库显示 EXISTS？** 同图已存（hash 去重），直接用返回路径即可。
+
+## License & Credits
+
+- 代码 / 文档：[MIT](./LICENSE)
+- 图包版权归素材来源，推荐 [astrbot-meme-pack-official-01](https://github.com/anka-afk/astrbot-meme-pack-official-01)
+- 面向 [Hermes Agent](https://github.com/NousResearch/hermes-agent)

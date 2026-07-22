@@ -6,18 +6,30 @@ venv/
 .env
 .env.*
 !.env.example
-*.db
 *.db-journal
 .DS_Store
 .idea/
 .vscode/
+
+# local dumps (do not ship ad-hoc media at repo root)
 meme-packs/
-memes/
-# ignore loose media dumps, keep marketing assets
-*.gif
-*.jpg
-*.jpeg
-*.webp
+/memes/
+/*.gif
+/*.jpg
+/*.jpeg
+/*.webp
 /*.png
+
+# keep marketing assets + bundled pack (images + portable index.db)
 !assets/
 !assets/**
+!packs/
+!packs/**
+!packs/**/*.db
+!packs/**/*.gif
+!packs/**/*.jpg
+!packs/**/*.jpeg
+!packs/**/*.png
+!packs/**/*.webp
+!packs/**/*.json
+!packs/**/*.md

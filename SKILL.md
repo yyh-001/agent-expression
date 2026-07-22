@@ -45,7 +45,8 @@ $MEME_HOME/meme-packs/<pack-id>/
 
 兼容别名：`HERMES_MEME_PACK` / `HERMES_MEME_PACK_ID` / `HERMES_HOME`。
 
-推荐图包：[astrbot-meme-pack-official-01](https://github.com/anka-afk/astrbot-meme-pack-official-01) → `memes/<tag>/`。
+推荐图包已内置：`packs/official-001/`（含 caption + embedding-3 向量，路径为包内相对路径）。  
+安装脚本会部署到 `$MEME_HOME/meme-packs/official-001/`。上游图源见包内 `CREDITS.md`。
 
 ## CLI（任意能跑 shell 的 Agent）
 

@@ -13,6 +13,9 @@ from typing import Iterable, Optional
 
 IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp"}
 
+# sqlite3.Connection may be slotted / non-weakrefable — key by id(conn).
+_CONN_PACK_DIRS: dict[int, Path] = {}
+
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS memes (
   path TEXT PRIMARY KEY,
@@ -65,7 +68,14 @@ def default_pack_dir() -> Path:
         or os.environ.get("HERMES_MEME_PACK_ID")
         or "official-001"
     ).strip() or "official-001"
-    return data_home() / "meme-packs" / pack_id
+    candidate = data_home() / "meme-packs" / pack_id
+    if (candidate / "index.db").is_file() or (candidate / "memes").is_dir():
+        return candidate
+    # Bundled with the skill checkout
+    bundled = Path(__file__).resolve().parents[1] / "packs" / pack_id
+    if (bundled / "index.db").is_file() or (bundled / "memes").is_dir():
+        return bundled
+    return candidate
 
 
 def dotenv_candidates() -> list[Path]:
@@ -147,11 +157,88 @@ def db_path_for_pack(pack_dir: Path) -> Path:
 
 
 def connect(pack_dir: Path) -> sqlite3.Connection:
+    pack_dir = pack_dir.expanduser().resolve()
     pack_dir.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(str(db_path_for_pack(pack_dir)))
     conn.row_factory = sqlite3.Row
     conn.executescript(SCHEMA)
+    _CONN_PACK_DIRS[id(conn)] = pack_dir
     return conn
+
+
+def pack_dir_of(conn: sqlite3.Connection) -> Optional[Path]:
+    return _CONN_PACK_DIRS.get(id(conn))
+
+
+def to_store_path(pack_dir: Path, path: Path) -> str:
+    """Prefer pack-relative POSIX path (portable across machines)."""
+    path = path.expanduser().resolve()
+    pack = pack_dir.expanduser().resolve()
+    try:
+        return path.relative_to(pack).as_posix()
+    except ValueError:
+        return str(path)
+
+
+def from_store_path(pack_dir: Path, stored: str) -> Path:
+    """Resolve DB path to an absolute filesystem path."""
+    raw = (stored or "").strip()
+    if not raw:
+        return Path(raw)
+    p = Path(raw)
+    pack = pack_dir.expanduser().resolve()
+    if not p.is_absolute():
+        return (pack / p).resolve()
+    if p.is_file():
+        return p.resolve()
+    # Legacy absolute path from another machine: remap …/memes/<tag>/<file>
+    parts = p.parts
+    if "memes" in parts:
+        i = parts.index("memes")
+        cand = pack.joinpath(*parts[i:])
+        if cand.is_file():
+            return cand.resolve()
+    return p
+
+
+def absolutize_path(conn: sqlite3.Connection, stored: str) -> str:
+    pack = pack_dir_of(conn)
+    if not pack:
+        return stored
+    return str(from_store_path(pack, stored))
+
+
+def relocate_index_to_relative(conn: sqlite3.Connection, pack_dir: Optional[Path] = None) -> dict:
+    """Rewrite absolute meme/embedding paths to pack-relative. Idempotent."""
+    pack = (pack_dir or pack_dir_of(conn) or Path(".")).expanduser().resolve()
+    memes = list(conn.execute("SELECT path FROM memes"))
+    changed = 0
+    for row in memes:
+        old = row["path"]
+        abs_p = from_store_path(pack, old)
+        new = to_store_path(pack, abs_p) if abs_p.exists() else (
+            Path(old).as_posix() if not Path(old).is_absolute() else old
+        )
+        # If still absolute but under pack via string remap
+        if Path(new).is_absolute():
+            try:
+                new = Path(new).resolve().relative_to(pack).as_posix()
+            except Exception:
+                if "memes/" in old.replace("\\", "/"):
+                    new = old.replace("\\", "/").split("memes/", 1)[-1]
+                    new = "memes/" + new if not new.startswith("memes/") else new
+        if new == old:
+            continue
+        # Update PK carefully
+        conn.execute("UPDATE memes SET path=? WHERE path=?", (new, old))
+        conn.execute("UPDATE memes_fts SET path=? WHERE path=?", (new, old))
+        try:
+            conn.execute("UPDATE meme_embeddings SET path=? WHERE path=?", (new, old))
+        except sqlite3.OperationalError:
+            pass
+        changed += 1
+    conn.commit()
+    return {"rewritten": changed, "total": len(memes)}
 
 
 def file_hash(path: Path, max_bytes: int = 1024 * 1024) -> str:
@@ -197,9 +284,11 @@ def upsert_meme(
     caption: Optional[str] = None,
     keywords: Optional[str] = None,
     keep_caption: bool = True,
+    pack_dir: Optional[Path] = None,
 ) -> None:
-    path = path.resolve()
-    path_s = str(path)
+    path = path.expanduser().resolve()
+    pack = pack_dir or pack_dir_of(conn)
+    path_s = to_store_path(pack, path) if pack else str(path)
     mtime = path.stat().st_mtime
     fhash = file_hash(path)
     row = conn.execute("SELECT caption, keywords, file_hash FROM memes WHERE path=?", (path_s,)).fetchone()
@@ -269,13 +358,15 @@ def upsert_meme(
 
 def sync_files(conn: sqlite3.Connection, pack_dir: Path) -> dict:
     """Scan pack on disk; upsert rows; delete missing. Returns counts."""
+    pack_dir = pack_dir.expanduser().resolve()
+    _CONN_PACK_DIRS[id(conn)] = pack_dir
     seen: set[str] = set()
     added = updated = 0
     for tag, path in iter_pack_images(pack_dir):
-        path_s = str(path)
+        path_s = to_store_path(pack_dir, path)
         seen.add(path_s)
         before = conn.execute("SELECT file_hash FROM memes WHERE path=?", (path_s,)).fetchone()
-        upsert_meme(conn, path=path, tag=tag, keep_caption=True)
+        upsert_meme(conn, path=path, tag=tag, keep_caption=True, pack_dir=pack_dir)
         if before is None:
             added += 1
         else:
@@ -287,6 +378,10 @@ def sync_files(conn: sqlite3.Connection, pack_dir: Path) -> dict:
         if r["path"] not in seen:
             conn.execute("DELETE FROM memes_fts WHERE path=?", (r["path"],))
             conn.execute("DELETE FROM memes WHERE path=?", (r["path"],))
+            try:
+                conn.execute("DELETE FROM meme_embeddings WHERE path=?", (r["path"],))
+            except sqlite3.OperationalError:
+                pass
             deleted += 1
     conn.commit()
     return {"added": added, "scanned": len(seen), "deleted": deleted}
@@ -392,7 +487,7 @@ def search(
                     score += 1
             results.append(
                 {
-                    "path": p,
+                    "path": absolutize_path(conn, p),
                     "tag": r["tag"],
                     "caption": cap,
                     "keywords": kw,
@@ -406,7 +501,13 @@ def search(
     sql = "SELECT path, tag, caption, keywords FROM memes WHERE tag = ? ORDER BY file_name LIMIT ?"
     rows = conn.execute(sql, (tag, limit)).fetchall()
     return [
-        {"path": r["path"], "tag": r["tag"], "caption": r["caption"] or "", "keywords": r["keywords"] or "", "score": 0}
+        {
+            "path": absolutize_path(conn, r["path"]),
+            "tag": r["tag"],
+            "caption": r["caption"] or "",
+            "keywords": r["keywords"] or "",
+            "score": 0,
+        }
         for r in rows
     ]
 

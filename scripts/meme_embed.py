@@ -259,6 +259,18 @@ def load_matrix(
     return metas, np.vstack(mats).astype(np.float32)
 
 
+def _resolve_result_path(conn: sqlite3.Connection, stored: str) -> str:
+    import sys
+
+    for mod in list(sys.modules.values()):
+        fn = getattr(mod, "__file__", "") or ""
+        if fn.endswith("meme_db.py") and hasattr(mod, "pack_dir_of") and hasattr(mod, "from_store_path"):
+            pack = mod.pack_dir_of(conn)
+            if pack is not None:
+                return str(mod.from_store_path(pack, stored))
+    return stored
+
+
 def search_vector(
     conn: sqlite3.Connection,
     query: str,
@@ -302,7 +314,7 @@ def search_vector(
         m = metas[int(i)]
         results.append(
             {
-                "path": m["path"],
+                "path": _resolve_result_path(conn, m["path"]),
                 "tag": m["tag"],
                 "caption": m["caption"],
                 "keywords": m["keywords"],

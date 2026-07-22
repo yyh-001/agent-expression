@@ -143,12 +143,12 @@ def main(argv: list[str] | None = None) -> int:
     ok = fail = 0
 
     def work(row) -> tuple[str, dict | None, str | None]:
-        path = Path(row["path"])
+        path = mdb.from_store_path(pack_dir, row["path"])
         try:
             meta = vision_caption(path, row["tag"], vision)
-            return row["path"], meta, None
+            return str(path), meta, None
         except Exception as e:
-            return row["path"], None, str(e)
+            return str(path), None, str(e)
 
     with ThreadPoolExecutor(max_workers=max(1, args.workers)) as ex:
         futs = {ex.submit(work, r): r for r in rows}

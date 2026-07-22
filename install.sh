@@ -190,17 +190,39 @@ elif [[ "$NO_LINK" -eq 0 && "$WANT_PROJECT" -eq 1 ]]; then
   done < <(collect_host_links)
 fi
 
-# Data / pack root
+# Data / pack root — prefer bundled pack (images + captions + embeddings)
 if [[ -d "${HERMES_HOME:-$HOME/.hermes}/meme-packs" ]]; then
   DATA_HOME="${HERMES_HOME:-$HOME/.hermes}"
 else
   DATA_HOME="${MEME_HOME:-$HOME/.agent-expression}"
 fi
 PACK_DIR="${MEME_PACK:-$DATA_HOME/meme-packs/${MEME_PACK_ID:-official-001}}"
+BUNDLED="$CANON/packs/official-001"
 
-if [[ "$WANT_PACK" -eq 1 ]] || [[ ! -d "$PACK_DIR/memes" ]]; then
+deploy_bundled_pack() {
+  local dest="$1"
+  local src="$2"
+  [[ -f "$src/index.db" && -d "$src/memes" ]] || return 1
+  mkdir -p "$dest"
+  # Copy images if missing / incomplete; always refresh portable index when absent or --pack
+  if [[ ! -d "$dest/memes" ]] || [[ "$WANT_PACK" -eq 1 ]]; then
+    rm -rf "$dest/memes"
+    cp -a "$src/memes" "$dest/"
+  fi
+  if [[ ! -f "$dest/index.db" ]] || [[ "$WANT_PACK" -eq 1 ]]; then
+    cp -a "$src/index.db" "$dest/index.db"
+  fi
+  [[ -f "$src/manifest.json" ]] && cp -a "$src/manifest.json" "$dest/"
+  [[ -f "$src/CREDITS.md" ]] && cp -a "$src/CREDITS.md" "$dest/"
+  echo "==> Bundled pack ready: $dest (index + embeddings included)"
+  return 0
+}
+
+if deploy_bundled_pack "$PACK_DIR" "$BUNDLED"; then
+  :
+elif [[ "$WANT_PACK" -eq 1 ]] || [[ ! -d "$PACK_DIR/memes" ]]; then
   mkdir -p "$PACK_DIR/memes"
-  echo "==> Pack dir ready: $PACK_DIR/memes/<tag>/"
+  echo "==> Pack dir ready: $PACK_DIR/memes/<tag>/ (no bundled pack in this checkout)"
 fi
 
 echo
@@ -216,10 +238,12 @@ if [[ ${#LINKED[@]} -gt 0 ]]; then
 fi
 cat <<EOF
 
-Next:
-  1) Stickers → $PACK_DIR/memes/<tag>/*   (e.g. astrbot-meme-pack-official-01)
-  2) python3 "$CANON/scripts/index-memes.py" --sync-only
-  3) python3 "$CANON/scripts/search-meme.py" "无语" --pick
+Next (bundled pack already searchable):
+  python3 "$CANON/scripts/search-meme.py" "无语" --pick
+
+Optional re-index / re-embed only if you change files or model:
+  python3 "$CANON/scripts/index-memes.py" --sync-only
+  python3 "$CANON/scripts/embed-memes.py"
 
 Hosts & delivery: $CANON/references/hosts.md
 Agent rules:      $CANON/SKILL.md

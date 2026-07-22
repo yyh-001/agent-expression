@@ -211,9 +211,39 @@ if (Test-Path -LiteralPath $hermesPacks) {
 $PackId = if ($env:MEME_PACK_ID) { $env:MEME_PACK_ID } elseif ($env:HERMES_MEME_PACK_ID) { $env:HERMES_MEME_PACK_ID } else { "official-001" }
 $PackDir = if ($env:MEME_PACK) { $env:MEME_PACK } else { Join-Path $DataHome "meme-packs\$PackId" }
 $MemesDir = Join-Path $PackDir "memes"
-if ($Pack -or -not (Test-Path -LiteralPath $MemesDir)) {
-  New-Item -ItemType Directory -Force -Path $MemesDir | Out-Null
-  Write-Host "==> Pack dir ready: $MemesDir\<tag>\"
+$Bundled = Join-Path $Canon "packs\official-001"
+
+function Deploy-BundledPack([string]$Dest, [string]$Src) {
+  $srcDb = Join-Path $Src "index.db"
+  $srcMemes = Join-Path $Src "memes"
+  if (-not ((Test-Path -LiteralPath $srcDb) -and (Test-Path -LiteralPath $srcMemes))) {
+    return $false
+  }
+  New-Item -ItemType Directory -Force -Path $Dest | Out-Null
+  $destMemes = Join-Path $Dest "memes"
+  if ($Pack -or -not (Test-Path -LiteralPath $destMemes)) {
+    if (Test-Path -LiteralPath $destMemes) { Remove-Item -LiteralPath $destMemes -Recurse -Force }
+    Copy-Item -LiteralPath $srcMemes -Destination $destMemes -Recurse -Force
+  }
+  $destDb = Join-Path $Dest "index.db"
+  if ($Pack -or -not (Test-Path -LiteralPath $destDb)) {
+    Copy-Item -LiteralPath $srcDb -Destination $destDb -Force
+  }
+  foreach ($f in @("manifest.json", "CREDITS.md")) {
+    $sf = Join-Path $Src $f
+    if (Test-Path -LiteralPath $sf) {
+      Copy-Item -LiteralPath $sf -Destination (Join-Path $Dest $f) -Force
+    }
+  }
+  Write-Host "==> Bundled pack ready: $Dest (index + embeddings included)"
+  return $true
+}
+
+if (-not (Deploy-BundledPack $PackDir $Bundled)) {
+  if ($Pack -or -not (Test-Path -LiteralPath $MemesDir)) {
+    New-Item -ItemType Directory -Force -Path $MemesDir | Out-Null
+    Write-Host "==> Pack dir ready: $MemesDir\<tag>\ (no bundled pack in this checkout)"
+  }
 }
 
 $py = Find-Python
@@ -229,10 +259,8 @@ if ($Linked.Count -gt 0) {
   foreach ($t in $Linked) { Write-Host "    - $t" }
 }
 Write-Host ""
-Write-Host "Next:"
-Write-Host "  1) Stickers -> $MemesDir\<tag>\*"
-Write-Host "  2) $pyCmd `"$Canon\scripts\index-memes.py`" --sync-only"
-Write-Host "  3) $pyCmd `"$Canon\scripts\search-meme.py`" `"无语`" --pick"
+Write-Host "Next (bundled pack already searchable):"
+Write-Host "  $pyCmd `"$Canon\scripts\search-meme.py`" `"无语`" --pick"
 Write-Host ""
 Write-Host "Hosts: $Canon\references\hosts.md"
 Write-Host "Skill: $Canon\SKILL.md"

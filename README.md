@@ -25,7 +25,7 @@
 **agent-expression** 是一套本地表情包管线：索引 → 检索 → 只返回真实绝对路径。  
 不绑定 Hermes / Cursor / 某一框架——只要能跑 shell、能发本地图，就能接。
 
-本仓库是 **Skill + CLI**，不附带图片素材。
+本仓库是 **Skill + CLI + 预置图包**（`packs/official-001/`，含 caption 与 embedding，开箱可搜）。图片版权见包内 `CREDITS.md`。
 
 ---
 
@@ -73,16 +73,18 @@ powershell -ExecutionPolicy Bypass -File $env:TEMP\ae-install.ps1 -Cursor
 ## 装完三步
 
 ```bash
-# 1) 放图包到 memes/<tag>/
-#    推荐：https://github.com/anka-afk/astrbot-meme-pack-official-01
-
-# 2) 建索引（不用 API）—— Windows 可用 python / py -3
-python3 ~/.agent-expression/skill/scripts/index-memes.py --sync-only
-# Windows 示例：
-#   py -3 %USERPROFILE%\.agent-expression\skill\scripts\index-memes.py --sync-only
-
-# 3) 搜一张
+# 安装脚本会把 packs/official-001（图 + index.db + 向量）拷到本地 meme-packs/
+# 可直接搜，不必再识图 / 向量化：
 python3 ~/.agent-expression/skill/scripts/search-meme.py "无语" --pick
+# Windows：
+#   py -3 %USERPROFILE%\.agent-expression\skill\scripts\search-meme.py "无语" --pick
+```
+
+只有你改了图或换了 embedding 模型时，才需要：
+
+```bash
+python3 …/scripts/index-memes.py --sync-only   # 或 --workers 做 caption
+python3 …/scripts/embed-memes.py
 ```
 
 Agent 拿到路径后交给宿主发图。例如支持 `MEDIA:` 的网关：
@@ -160,5 +162,6 @@ agent-expression/
 
 ## License
 
-代码与文档 [MIT](./LICENSE)。  
-表情包版权归各自作者；推荐图包 [astrbot-meme-pack-official-01](https://github.com/anka-afk/astrbot-meme-pack-official-01)。
+- 代码与文档 [MIT](./LICENSE)。  
+- 预置图包来自 [astrbot-meme-pack-official-01](https://github.com/anka-afk/astrbot-meme-pack-official-01)，详见 [`packs/official-001/CREDITS.md`](./packs/official-001/CREDITS.md)。
+- 捆绑的 caption / embedding 仅方便开箱检索；更换模型请自行重跑脚本。

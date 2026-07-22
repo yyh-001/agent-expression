@@ -29,19 +29,6 @@ TAG_RE = am.TAG_RE
 JSON_RE = re.compile(r"\{[^{}]*\}", re.DOTALL)
 
 
-def _load_dotenv(env_path: Path) -> dict[str, str]:
-    out: dict[str, str] = {}
-    if not env_path.is_file():
-        return out
-    for line in env_path.read_text(encoding="utf-8", errors="replace").splitlines():
-        line = line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        k, _, v = line.partition("=")
-        out[k.strip()] = v.strip().strip('"').strip("'")
-    return out
-
-
 def _expand_env(value: str, env: dict[str, str]) -> str:
     def repl(m: re.Match[str]) -> str:
         return env.get(m.group(1), os.environ.get(m.group(1), m.group(0)))
@@ -49,26 +36,41 @@ def _expand_env(value: str, env: dict[str, str]) -> str:
     return re.sub(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}", repl, value or "")
 
 
+def _load_mdb():
+    spec = importlib.util.spec_from_file_location("meme_db", _SCRIPTS / "meme_db.py")
+    mod = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(mod)
+    return mod
+
+
 def load_vision_config() -> dict[str, str]:
-    home = Path(os.environ.get("HERMES_HOME", "~/.hermes")).expanduser()
-    env = _load_dotenv(home / ".env")
-    env.update({k: v for k, v in os.environ.items() if v})
+    """OpenAI-compatible vision: env first, optional Hermes config.yaml fallback."""
+    mdb = _load_mdb()
+    env = mdb.load_dotenv_merged()
 
     cfg: dict = {}
-    cfg_path = home / "config.yaml"
-    if cfg_path.is_file():
+    for home_key in ("MEME_HOME", "AGENT_EXPRESSION_HOME", "HERMES_HOME"):
+        home_v = os.environ.get(home_key, "").strip()
+        if home_v:
+            homes = [Path(home_v).expanduser()]
+            break
+    else:
+        homes = [mdb.data_home(), Path("~/.hermes").expanduser()]
+
+    for home in homes:
+        cfg_path = home / "config.yaml"
+        if not cfg_path.is_file():
+            continue
         try:
             import yaml  # type: ignore
 
             raw = yaml.safe_load(cfg_path.read_text(encoding="utf-8")) or {}
             cfg = ((raw.get("auxiliary") or {}).get("vision") or {})
         except Exception:
-            # minimal parse without pyyaml
             text = cfg_path.read_text(encoding="utf-8")
             block = False
             for line in text.splitlines():
-                if re.match(r"^auxiliary:\s*$", line):
-                    block = False
                 if re.match(r"^\s+vision:\s*$", line):
                     block = True
                     continue
@@ -81,12 +83,30 @@ def load_vision_config() -> dict[str, str]:
                     ):
                         if not line.strip().startswith("#"):
                             block = False
+        if cfg:
+            break
 
-    base_url = _expand_env(str(cfg.get("base_url") or ""), env).rstrip("/")
+    base_url = _expand_env(
+        str(
+            cfg.get("base_url")
+            or env.get("VISION_BASE_URL")
+            or env.get("OPENAI_BASE_URL")
+            or ""
+        ),
+        env,
+    ).rstrip("/")
     api_key = _expand_env(str(cfg.get("api_key") or ""), env)
-    model = _expand_env(str(cfg.get("model") or ""), env)
+    model = _expand_env(
+        str(cfg.get("model") or env.get("VISION_MODEL") or ""),
+        env,
+    )
     if not api_key:
-        api_key = env.get("ARK_API_KEY") or env.get("OPENAI_API_KEY") or ""
+        api_key = (
+            env.get("VISION_API_KEY")
+            or env.get("ARK_API_KEY")
+            or env.get("OPENAI_API_KEY")
+            or ""
+        )
     if not base_url:
         base_url = "https://ark.cn-beijing.volces.com/api/v3"
     if not model:
@@ -155,7 +175,9 @@ def source_to_local(source: str, tmp_dir: Path) -> Path:
 
 def vision_classify(data_url: str, catalog: list[dict[str, str]], vision: dict[str, str]) -> dict:
     if not vision.get("api_key"):
-        raise RuntimeError("no vision api_key (set ARK_API_KEY / auxiliary.vision.api_key)")
+        raise RuntimeError(
+            "no vision api_key (set VISION_API_KEY / OPENAI_API_KEY / ARK_API_KEY)"
+        )
 
     cat_lines = "\n".join(
         f"- {c['tag']}: {c['desc']} (n={c['count']})" for c in catalog
@@ -198,7 +220,7 @@ def vision_classify(data_url: str, catalog: list[dict[str, str]], vision: dict[s
         headers={
             "Authorization": f"Bearer {vision['api_key']}",
             "Content-Type": "application/json",
-            "User-Agent": "hermes-agent-expression/1.2",
+            "User-Agent": "agent-expression/classify",
         },
         method="POST",
     )
@@ -297,7 +319,7 @@ def main(argv: list[str] | None = None) -> int:
             }
         )
 
-    tmp_dir = Path(os.environ.get("TMPDIR", "/tmp")) / "hermes-meme-classify"
+    tmp_dir = Path(os.environ.get("TMPDIR", "/tmp")) / "agent-expression-meme"
     tmp_dir.mkdir(parents=True, exist_ok=True)
 
     try:

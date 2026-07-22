@@ -1,116 +1,148 @@
 <p align="center">
-  <img src="assets/cover.jpg" alt="agent-expression — 表情包 Skill" width="920" />
-</p>
-
-<h1 align="center">agent-expression</h1>
-
-<p align="center">
-  <strong>让 Agent 会斗图。</strong><br/>
-  本地表情包检索 · 识图入库 · 一键 <code>MEDIA:</code> 发出去
+  <img src="assets/cover.jpg" alt="表情包 Skill — agent-expression" width="100%" />
 </p>
 
 <p align="center">
-  <a href="./SKILL.md"><img src="https://img.shields.io/badge/Hermes-Skill-amber?style=flat-square" alt="Hermes Skill" /></a>
-  <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="MIT" /></a>
+  <strong>让 Agent 看懂表情包：找得到、存得下、发得出。</strong>
+</p>
+
+<p align="center">
+  <a href="./SKILL.md"><img src="https://img.shields.io/badge/Skill-agent--expression-amber?style=flat-square" alt="Skill" /></a>
+  <img src="https://img.shields.io/badge/Host-agnostic-informational?style=flat-square" alt="Host agnostic" />
   <img src="https://img.shields.io/badge/Python-3.10+-blue?style=flat-square" alt="Python" />
+  <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="MIT" /></a>
 </p>
 
 ---
 
-聊天 Agent 最容易翻车的地方：瞎编图片路径、`ls|shuf` 乱抽、发不出去。
+聊天 Agent 斗图最容易翻车的三件事：
 
-**agent-expression** 把表情包变成一条稳链路：
+- 手写假路径  
+- `ls | shuf` 乱抽  
+- 发完就忘，下次搜不到  
 
-```text
-搜得到 → 路径真 → MEDIA 发出去
-学得会 → 识图分类 → 下次还能搜到
-```
+**agent-expression** 是一套本地表情包管线：索引 → 检索 → 只返回真实绝对路径。  
+不绑定 Hermes / Cursor / 某一框架——只要能跑 shell、能发本地图，就能接。
 
-> 本仓库是 **Skill + 脚本**，不含表情包图片。图包请自备，或用开源包。
+本仓库是 **Skill + CLI**，不附带图片素材。
 
-## 30 秒上手
+---
+
+## 一行安装
 
 ```bash
-# 1. 安装
-hermes skills install yyh-001/agent-expression
-# 或：git clone https://github.com/yyh-001/agent-expression.git ~/.hermes/skills/media/agent-expression
-
-# 2. 放图包（示例开源包）
-# https://github.com/anka-afk/astrbot-meme-pack-official-01
-# → ~/.hermes/meme-packs/official-001/memes/<tag>/*
-
-# 3. 索引 + 搜一张
-cd ~/.hermes/skills/media/agent-expression
-python3 scripts/index-memes.py --sync-only
-python3 scripts/search-meme.py "无语" --pick
+curl -fsSL https://raw.githubusercontent.com/yyh-001/agent-expression/main/install.sh | bash
 ```
 
-Agent 只贴返回路径：
+默认：**一份内容**装到 `~/.agent-expression/skill/`，并软链到主流 Agent / IDE：
+
+| 路径 | 覆盖 |
+|------|------|
+| `~/.agents/skills/agent-expression` | 跨工具（Codex / Cursor 等） |
+| `~/.cursor/skills/agent-expression` | Cursor |
+| `~/.claude/skills/agent-expression` | Claude Code |
+| `~/.codex/skills/agent-expression` | Codex 兼容路径 |
+| `~/.hermes/skills/media/agent-expression` | 若已装 Hermes |
+
+```bash
+# 当前仓库也挂上（项目级）
+curl -fsSL …/install.sh | bash -s -- --project
+
+# 只装某一个宿主
+curl -fsSL …/install.sh | bash -s -- --cursor
+curl -fsSL …/install.sh | bash -s -- --claude
+curl -fsSL …/install.sh | bash -s -- --hermes
+```
+
+完整宿主说明：[references/hosts.md](./references/hosts.md)
+
+## 装完三步
+
+```bash
+# 1) 放图包到 memes/<tag>/
+#    推荐：https://github.com/anka-afk/astrbot-meme-pack-official-01
+
+# 2) 建索引（不用 API）
+python3 ~/.agent-expression/skill/scripts/index-memes.py --sync-only
+
+# 3) 搜一张
+python3 ~/.agent-expression/skill/scripts/search-meme.py "无语" --pick
+```
+
+Agent 拿到路径后交给宿主发图。例如支持 `MEDIA:` 的网关：
 
 ```text
 行吧你赢了
-MEDIA:/abs/path/to/meme.png
+MEDIA:/abs/path/to/meme.jpg
 ```
 
-## 它能干什么
+其它宿主怎么贴图 → [references/hosts.md](./references/hosts.md)
 
-| | |
-|--|--|
-| **搜图** | 「想下班」「得意傲娇」——关键词或语义（可选向量） |
-| **入库** | 用户发来的图：识图分类 → caption → 可检索 |
-| **防翻车** | 禁止手写路径，禁止 `ls\|shuf` |
+---
 
-可选：挂成 Hermes 原生工具 `search_meme` / `add_meme` → 见 [`hermes-tools/`](./hermes-tools/)。
+## 它做什么
 
-## 一条命令对照
+| 能力 | 说明 |
+|------|------|
+| **语义搜图** | 口语 query；有向量更准，没有则 FTS 关键词 |
+| **识图入库** | 用户丢来一张图 → 分类 + caption → 下次可搜 |
+| **真实路径发出** | stdout 只出真实文件路径；禁止瞎编、禁止乱抽 |
+
+可选加强（需要 API key，见 [.env.example](./.env.example)）：
 
 ```bash
-python3 scripts/search-meme.py "摸鱼" --pick -v     # 检索
-python3 scripts/pick-meme.py shy                    # 按标签随机
-python3 scripts/classify-and-add-meme.py ./x.gif    # 识图入库
-python3 scripts/index-memes.py --workers 2          # 打 caption（需视觉 API）
-python3 scripts/embed-memes.py                      # 向量化（需 ZHIPU_API_KEY）
+python3 scripts/index-memes.py --workers 2   # 视觉写 caption
+python3 scripts/embed-memes.py               # 向量检索
 ```
 
-## 配置（按需）
+---
 
-复制 [`.env.example`](./.env.example) 到 `~/.hermes/.env`：
+## 日常命令
 
-| 你要什么 | 配什么 |
-|----------|--------|
-| 只关键词搜 | 不用 key，跑 `--sync-only` 即可 |
-| 语义搜更准 | `ZHIPU_API_KEY` + `embed-memes.py` |
-| 自动写描述 / 入库分类 | 视觉 API（`ARK_API_KEY` 或 OpenAI 兼容） |
+```bash
+python3 scripts/search-meme.py "想下班" --pick -v   # 检索
+python3 scripts/pick-meme.py shy                    # 按标签随机
+python3 scripts/classify-and-add-meme.py ./x.gif    # 识图入库
+python3 scripts/add-meme.py happy ./x.gif           # 指定标签入库
+```
 
-图包路径可用 `HERMES_MEME_PACK` / `HERMES_MEME_PACK_ID` 覆盖。  
-标签一览：[`references/categories.md`](./references/categories.md)
+数据根目录可用环境变量覆盖：`MEME_PACK` / `MEME_HOME` / `MEME_PACK_ID`（仍兼容 `HERMES_*`）。
 
-## Agent 三条铁律
+---
+
+## 给模型的三条铁律
 
 完整约定在 [**SKILL.md**](./SKILL.md)。
 
-1. 只用脚本/工具给出的绝对路径写 `MEDIA:`
-2. 不手写路径，不 `ls|shuf|find`
-3. 搜失败就回文字，别硬发
+1. 只用脚本（或宿主原生工具）返回的绝对路径  
+2. 不手写路径，不 `ls|shuf|find` 自己挑图  
+3. 搜失败就回文字，别硬发  
 
-## 仓库结构
+---
+
+## 接到你的 Agent
+
+一行安装后，Cursor / Claude Code / Codex / Hermes 等会自动发现同名 Skill。发图方式见 [hosts](./references/hosts.md)。
+
+| 你在用 | 怎么接 |
+|--------|--------|
+| Cursor / Claude / Codex | 用户级 skill 已链好；对话里提「发个表情包」或 `/agent-expression` |
+| [Hermes](https://github.com/NousResearch/hermes-agent) | 同上；可选 [`hermes-tools/`](./hermes-tools/) 原生工具 |
+| 任意能跑 shell 的 Agent | 执行 `scripts/`，发返回的绝对路径 |
+| 自建 bot | `subprocess(search-meme.py --pick)` → `send_image(path)` |
 
 ```text
-SKILL.md          Agent 说明书
-scripts/          CLI（检索 / 索引 / 入库 / 嵌入）
-hermes-tools/     可选原生工具
-references/       Schema & 标签
-assets/cover.jpg  宣传图
+agent-expression/
+  SKILL.md         Agent 说明书（通用）
+  scripts/         检索 · 索引 · 入库 · 嵌入
+  hermes-tools/    可选 Hermes 适配
+  references/      schema · 标签 · 宿主约定
+  assets/cover.jpg
 ```
 
-## 常见问题
+---
 
-**搜不到？** 先 `index-memes.py --sync-only`；要语义再 `embed-memes.py`。  
-**路径被跳过？** 必须是真实存在的绝对路径，且在 `memes/` 下。  
-**入库显示 EXISTS？** 同图已存（hash 去重），直接用返回路径即可。
+## License
 
-## License & Credits
-
-- 代码 / 文档：[MIT](./LICENSE)
-- 图包版权归素材来源，推荐 [astrbot-meme-pack-official-01](https://github.com/anka-afk/astrbot-meme-pack-official-01)
-- 面向 [Hermes Agent](https://github.com/NousResearch/hermes-agent)
+代码与文档 [MIT](./LICENSE)。  
+表情包版权归各自作者；推荐图包 [astrbot-meme-pack-official-01](https://github.com/anka-afk/astrbot-meme-pack-official-01)。

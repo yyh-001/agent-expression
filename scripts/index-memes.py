@@ -67,7 +67,7 @@ def vision_caption(path: Path, tag: str, vision: dict[str, str]) -> dict[str, st
         headers={
             "Authorization": f"Bearer {vision['api_key']}",
             "Content-Type": "application/json",
-            "User-Agent": "hermes-agent-expression/index-memes",
+            "User-Agent": "agent-expression/index-memes",
         },
         method="POST",
     )

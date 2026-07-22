@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """Native meme search tool — query local SQLite caption index, return real paths.
 
-Wraps the agent-expression pack index (~/.hermes/meme-packs/*/index.db) so the
-model can call ``search_meme`` instead of shelling out to ``ls|shuf`` or
-hand-writing MEDIA paths.
+Wraps the agent-expression pack index so the model can call ``search_meme``
+instead of shelling out to ``ls|shuf`` or hand-writing MEDIA paths.
 """
 
 from __future__ import annotations
@@ -19,24 +18,34 @@ from typing import Any, Optional
 logger = logging.getLogger(__name__)
 
 
-def _hermes_home() -> Path:
-    return Path(os.environ.get("HERMES_HOME", "~/.hermes")).expanduser()
+def _data_home() -> Path:
+    for key in ("MEME_HOME", "AGENT_EXPRESSION_HOME", "HERMES_HOME"):
+        v = os.environ.get(key, "").strip()
+        if v:
+            return Path(v).expanduser().resolve()
+    hermes = Path("~/.hermes").expanduser()
+    if (hermes / "meme-packs").is_dir():
+        return hermes.resolve()
+    return Path("~/.agent-expression").expanduser().resolve()
 
 
 def _scripts_dir() -> Path:
     """Resolve agent-expression scripts directory.
 
     Order:
-      1. HERMES_MEME_SKILL_DIR/scripts
-      2. ~/.hermes/skills/media/agent-expression/scripts
-      3. sibling ../scripts when this file lives in hermes-tools/
+      1. MEME_SKILL_DIR / HERMES_MEME_SKILL_DIR /scripts
+      2. $data_home/skills/media/agent-expression/scripts
+      3. ~/.hermes/skills/… (compat)
+      4. sibling ../scripts when this file lives in hermes-tools/
     """
-    override = os.environ.get("HERMES_MEME_SKILL_DIR", "").strip()
-    if override:
-        return Path(override).expanduser().resolve() / "scripts"
-    home = _hermes_home()
+    for key in ("MEME_SKILL_DIR", "HERMES_MEME_SKILL_DIR"):
+        override = os.environ.get(key, "").strip()
+        if override:
+            return Path(override).expanduser().resolve() / "scripts"
+    home = _data_home()
     candidates = [
         home / "skills" / "media" / "agent-expression" / "scripts",
+        Path("~/.hermes").expanduser() / "skills" / "media" / "agent-expression" / "scripts",
         Path(__file__).resolve().parent.parent / "scripts",
     ]
     for c in candidates:

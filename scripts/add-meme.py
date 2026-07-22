@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Add an image into a local Hermes meme pack category (create category if needed)."""
+"""Add an image into a local meme pack category (create category if needed)."""
 
 from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
 import re
@@ -31,14 +32,15 @@ _MAGIC = (
     (b"BM", ".bmp"),
 )
 
+_SCRIPTS = Path(__file__).resolve().parent
+_spec = importlib.util.spec_from_file_location("meme_db", _SCRIPTS / "meme_db.py")
+_mdb = importlib.util.module_from_spec(_spec)
+assert _spec.loader is not None
+_spec.loader.exec_module(_mdb)
+
 
 def default_pack_dir() -> Path:
-    override = os.environ.get("HERMES_MEME_PACK", "").strip()
-    if override:
-        return Path(override).expanduser()
-    home = Path(os.environ.get("HERMES_HOME", "~/.hermes")).expanduser()
-    pack_id = os.environ.get("HERMES_MEME_PACK_ID", "official-001").strip() or "official-001"
-    return home / "meme-packs" / pack_id
+    return _mdb.default_pack_dir()
 
 
 def load_manifest(pack_dir: Path) -> dict:
@@ -112,7 +114,7 @@ def fetch_bytes(source: str) -> tuple[bytes, str]:
             raise ValueError("refusing to fetch private/local URL (SSRF guard)")
         req = urllib.request.Request(
             source,
-            headers={"User-Agent": "hermes-agent-expression/1.1"},
+            headers={"User-Agent": "agent-expression/add-meme"},
         )
         with urllib.request.urlopen(req, timeout=30) as resp:
             data = resp.read(MAX_BYTES + 1)
@@ -260,7 +262,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument(
         "--pack",
-        help="Meme pack root (default: ~/.hermes/meme-packs/official-001)",
+        help="Meme pack root (default: $MEME_PACK or ~/…/meme-packs/official-001)",
     )
     p.add_argument(
         "--create",

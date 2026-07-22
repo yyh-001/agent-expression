@@ -38,13 +38,75 @@ CREATE VIRTUAL TABLE IF NOT EXISTS memes_fts USING fts5(
 """
 
 
+def data_home() -> Path:
+    """Root for meme-packs/ and optional .env (host-agnostic).
+
+    Priority: MEME_HOME → AGENT_EXPRESSION_HOME → HERMES_HOME →
+    existing ~/.hermes (compat) → ~/.agent-expression.
+    """
+    for key in ("MEME_HOME", "AGENT_EXPRESSION_HOME", "HERMES_HOME"):
+        v = os.environ.get(key, "").strip()
+        if v:
+            return Path(v).expanduser().resolve()
+    hermes = Path("~/.hermes").expanduser()
+    if (hermes / "meme-packs").is_dir():
+        return hermes.resolve()
+    return Path("~/.agent-expression").expanduser().resolve()
+
+
 def default_pack_dir() -> Path:
-    override = os.environ.get("HERMES_MEME_PACK", "").strip()
-    if override:
-        return Path(override).expanduser()
-    home = Path(os.environ.get("HERMES_HOME", "~/.hermes")).expanduser()
-    pack_id = os.environ.get("HERMES_MEME_PACK_ID", "official-001").strip() or "official-001"
-    return home / "meme-packs" / pack_id
+    """Pack root: …/meme-packs/<id>/ containing memes/ + index.db."""
+    for key in ("MEME_PACK", "HERMES_MEME_PACK"):
+        override = os.environ.get(key, "").strip()
+        if override:
+            return Path(override).expanduser().resolve()
+    pack_id = (
+        os.environ.get("MEME_PACK_ID")
+        or os.environ.get("HERMES_MEME_PACK_ID")
+        or "official-001"
+    ).strip() or "official-001"
+    return data_home() / "meme-packs" / pack_id
+
+
+def dotenv_candidates() -> list[Path]:
+    """Likely .env locations (first existing wins for loaders)."""
+    seen: set[Path] = set()
+    out: list[Path] = []
+    for key in ("MEME_HOME", "AGENT_EXPRESSION_HOME", "HERMES_HOME"):
+        v = os.environ.get(key, "").strip()
+        if v:
+            p = Path(v).expanduser().resolve() / ".env"
+            if p not in seen:
+                seen.add(p)
+                out.append(p)
+    for base in (
+        Path("~/.agent-expression").expanduser(),
+        Path("~/.hermes").expanduser(),
+        Path(__file__).resolve().parents[1],  # skill root
+        Path.cwd(),
+    ):
+        p = (base / ".env").resolve()
+        if p not in seen:
+            seen.add(p)
+            out.append(p)
+    return out
+
+
+def load_dotenv_merged() -> dict[str, str]:
+    """Load key=value from the first existing dotenv, then overlay process env."""
+    out: dict[str, str] = {}
+    for env_path in dotenv_candidates():
+        if not env_path.is_file():
+            continue
+        for line in env_path.read_text(encoding="utf-8", errors="replace").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            k, _, v = line.partition("=")
+            out[k.strip()] = v.strip().strip('"').strip("'")
+        break
+    out.update({k: v for k, v in os.environ.items() if v})
+    return out
 
 
 def db_path_for_pack(pack_dir: Path) -> Path:

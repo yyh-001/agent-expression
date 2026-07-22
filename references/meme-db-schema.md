@@ -3,8 +3,10 @@
 ## 位置
 
 ```
-${HERMES_HOME:-~/.hermes}/meme-packs/<pack-id>/index.db
+${MEME_HOME:-auto}/meme-packs/<pack-id>/index.db
 ```
+
+也可用 `MEME_PACK` 直接指向包根。未设 `MEME_HOME` 时：若存在 `~/.hermes/meme-packs` 则沿用，否则 `~/.agent-expression`。兼容 `HERMES_HOME` / `HERMES_MEME_PACK*`。
 
 默认 `pack-id=official-001`。
 

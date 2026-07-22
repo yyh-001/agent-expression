@@ -1,6 +1,6 @@
 # 标签速查（官方包 `official-001`）
 
-包路径：`${HERMES_HOME:-~/.hermes}/meme-packs/official-001`
+包路径：`$MEME_PACK` 或 `${MEME_HOME}/meme-packs/official-001`（兼容 `HERMES_*`）
 
 来源建议：[astrbot-meme-pack-official-01](https://github.com/anka-afk/astrbot-meme-pack-official-01)
 

@@ -47,31 +47,40 @@ def _clear_proxy_env() -> None:
 
 
 def _load_dotenv() -> dict[str, str]:
-    home = Path(os.environ.get("HERMES_HOME", "~/.hermes")).expanduser()
-    out: dict[str, str] = {}
-    env_path = home / ".env"
-    if not env_path.is_file():
-        return out
-    for line in env_path.read_text(encoding="utf-8", errors="replace").splitlines():
-        line = line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        k, _, v = line.partition("=")
-        out[k.strip()] = v.strip().strip('"').strip("'")
-    return out
+    # Prefer shared loader from meme_db when available (same scripts dir).
+    try:
+        import importlib.util
+
+        db_py = Path(__file__).resolve().parent / "meme_db.py"
+        spec = importlib.util.spec_from_file_location("_ae_meme_db_env", db_py)
+        if spec and spec.loader:
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            return mod.load_dotenv_merged()
+    except Exception:
+        pass
+    return {k: v for k, v in os.environ.items() if v}
 
 
 def embed_config() -> dict[str, str]:
     env = _load_dotenv()
-    env.update({k: v for k, v in os.environ.items() if v})
     api_key = (
         env.get("ZHIPU_API_KEY")
         or env.get("GLM_API_KEY")
         or env.get("Z_AI_API_KEY")
+        or env.get("EMBEDDING_API_KEY")
         or ""
     ).strip()
-    model = (env.get("ZHIPU_EMBEDDING_MODEL") or DEFAULT_MODEL).strip()
-    base = (env.get("ZHIPU_BASE_URL") or DEFAULT_BASE).rstrip("/")
+    model = (
+        env.get("ZHIPU_EMBEDDING_MODEL")
+        or env.get("EMBEDDING_MODEL")
+        or DEFAULT_MODEL
+    ).strip()
+    base = (
+        env.get("ZHIPU_BASE_URL")
+        or env.get("EMBEDDING_BASE_URL")
+        or DEFAULT_BASE
+    ).rstrip("/")
     return {"api_key": api_key, "model": model, "base_url": base}
 
 
@@ -114,7 +123,7 @@ def embed_texts(texts: list[str], *, cfg: Optional[dict] = None) -> list[list[fl
         headers={
             "Authorization": f"Bearer {cfg['api_key']}",
             "Content-Type": "application/json",
-            "User-Agent": "hermes-meme-embed/1.0",
+            "User-Agent": "agent-expression/meme-embed",
         },
         method="POST",
     )

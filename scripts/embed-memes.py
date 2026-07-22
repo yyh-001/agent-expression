@@ -39,7 +39,10 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if not cfg.get("api_key"):
-        print("ERROR: ZHIPU_API_KEY not set in ~/.hermes/.env", file=sys.stderr)
+        print(
+            "ERROR: ZHIPU_API_KEY (or EMBEDDING_API_KEY) not set in env / .env",
+            file=sys.stderr,
+        )
         return 1
 
     todo = emb.rows_needing_embed(conn, model=cfg["model"])

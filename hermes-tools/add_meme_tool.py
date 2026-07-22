@@ -19,18 +19,27 @@ logger = logging.getLogger(__name__)
 _TAG_RE = re.compile(r"^[a-z][a-z0-9_-]{0,31}$")
 
 
-def _hermes_home() -> Path:
-    return Path(os.environ.get("HERMES_HOME", "~/.hermes")).expanduser().resolve()
+def _data_home() -> Path:
+    for key in ("MEME_HOME", "AGENT_EXPRESSION_HOME", "HERMES_HOME"):
+        v = os.environ.get(key, "").strip()
+        if v:
+            return Path(v).expanduser().resolve()
+    hermes = Path("~/.hermes").expanduser()
+    if (hermes / "meme-packs").is_dir():
+        return hermes.resolve()
+    return Path("~/.agent-expression").expanduser().resolve()
 
 
 def _scripts_dir() -> Path:
     """Resolve agent-expression scripts directory (see search_meme_tool)."""
-    override = os.environ.get("HERMES_MEME_SKILL_DIR", "").strip()
-    if override:
-        return Path(override).expanduser().resolve() / "scripts"
-    home = _hermes_home()
+    for key in ("MEME_SKILL_DIR", "HERMES_MEME_SKILL_DIR"):
+        override = os.environ.get(key, "").strip()
+        if override:
+            return Path(override).expanduser().resolve() / "scripts"
+    home = _data_home()
     candidates = [
         home / "skills" / "media" / "agent-expression" / "scripts",
+        Path("~/.hermes").expanduser() / "skills" / "media" / "agent-expression" / "scripts",
         Path(__file__).resolve().parent.parent / "scripts",
     ]
     for c in candidates:
@@ -64,11 +73,9 @@ def _clear_proxy_env() -> None:
 
 def check_add_meme_requirements() -> bool:
     try:
-        home = _hermes_home()
         scripts = _scripts_dir()
-        pack = home / "meme-packs" / (
-            os.environ.get("HERMES_MEME_PACK_ID", "official-001").strip() or "official-001"
-        )
+        mdb = _load_module("ae_meme_db", "meme_db.py")
+        pack = mdb.default_pack_dir()
         return (
             (scripts / "classify-and-add-meme.py").is_file()
             and (scripts / "add-meme.py").is_file()
@@ -79,7 +86,7 @@ def check_add_meme_requirements() -> bool:
 
 
 def _assert_safe_source(source: str) -> str:
-    """Allow http(s) URLs or local files under HERMES_HOME / common tmp."""
+    """Allow http(s) URLs or local files under data home / common tmp."""
     source = (source or "").strip()
     if not source:
         raise ValueError("image_path is required")
@@ -90,12 +97,18 @@ def _assert_safe_source(source: str) -> str:
     if not path.is_file():
         raise ValueError(f"local file not found: {path}")
 
-    home = _hermes_home()
+    home = _data_home()
     allowed_roots = [
         home,
+        Path("~/.hermes").expanduser().resolve(),
         Path("/tmp"),
         Path(os.environ.get("TMPDIR", "/tmp")).resolve(),
     ]
+    try:
+        mdb = _load_module("ae_meme_db_safe", "meme_db.py")
+        allowed_roots.append(mdb.default_pack_dir().resolve())
+    except Exception:
+        pass
     ok = False
     for root in allowed_roots:
         try:
@@ -106,7 +119,7 @@ def _assert_safe_source(source: str) -> str:
             continue
     if not ok:
         raise ValueError(
-            f"refusing path outside HERMES_HOME/tmp: {path}"
+            f"refusing path outside data home/tmp: {path}"
         )
     return str(path)
 
@@ -291,7 +304,7 @@ def add_meme_tool(
     if not pack_dir.is_dir():
         return tool_error(f"meme pack not found: {pack_dir}")
 
-    tmp_dir = Path(os.environ.get("TMPDIR", "/tmp")) / "hermes-meme-classify"
+    tmp_dir = Path(os.environ.get("TMPDIR", "/tmp")) / "agent-expression-meme"
     tmp_dir.mkdir(parents=True, exist_ok=True)
 
     try:
@@ -478,7 +491,7 @@ ADD_MEME_SCHEMA = {
         "search_meme can find it later. Use when the user sends a sticker/meme "
         "and wants you to keep it, or when they say 入库/收下/学一下. "
         "image_path should be the local cache path from the inbound message "
-        "(e.g. ~/.hermes/cache/images/…). Optional tag skips auto-classify. "
+        "(e.g. cache/images under MEME_HOME or Hermes home). Optional tag skips auto-classify. "
         "NEVER use terminal ls/cp to manage the meme pack."
     ),
     "parameters": {

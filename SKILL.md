@@ -1,11 +1,9 @@
 ---
 name: agent-expression
-description: >
-  Local meme/sticker pack for chat agents: search by mood (vector+FTS),
-  vision ingest, emit real absolute image paths only. Never invent paths or ls|shuf.
-  On Cursor: open_resource(file:///…) to preview in editor (not MEDIA:/ chat bubbles).
-  On Hermes: MEDIA:/path. Use when sending/previewing stickers or ingesting user images.
-version: 2.2.0
+slug: agent-expression
+displayName: Agent Expression
+description: "本地表情包 Skill：按心情语义/关键词搜图、识图入库，只返回真实绝对路径（禁止瞎编路径或乱抽）。Cursor 用 open_resource 预览；Hermes 用 MEDIA:/path。"
+version: 2.2.1
 author: yyh-001
 license: MIT
 platforms: [linux, macos, windows]

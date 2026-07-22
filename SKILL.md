@@ -1,11 +1,11 @@
 ---
 name: agent-expression
 description: >
-  Local meme/sticker pack for chat agents: semantic search (vector + FTS),
-  vision classify + ingest, MEDIA: path delivery. Prefer search scripts/tools;
-  never invent image paths or ls|shuf.
+  Use when the agent should send or learn local meme/sticker images in chat.
+  Search by mood/scene (vector + FTS), vision-classify ingest, emit MEDIA: paths only.
+  Never invent paths or ls|shuf.
 version: 2.0.0
-author: community
+author: yyh-001
 license: MIT
 platforms: [linux, macos, windows]
 metadata:

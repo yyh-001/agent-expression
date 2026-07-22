@@ -10,6 +10,7 @@
   <a href="./SKILL.md"><img src="https://img.shields.io/badge/Skill-agent--expression-amber?style=flat-square" alt="Skill" /></a>
   <a href="https://clawhub.ai"><img src="https://img.shields.io/badge/ClawHub-agent--expression-orange?style=flat-square" alt="ClawHub" /></a>
   <a href="https://www.skillhub.cn/"><img src="https://img.shields.io/badge/SkillHub-agent--expression-00a4ff?style=flat-square" alt="SkillHub" /></a>
+  <a href="https://qm.qq.com/q/993579665"><img src="https://img.shields.io/badge/QQ群-993579665-12b7f5?style=flat-square" alt="QQ群" /></a>
   <img src="https://img.shields.io/badge/Host-agnostic-informational?style=flat-square" alt="Host agnostic" />
   <img src="https://img.shields.io/badge/OS-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey?style=flat-square" alt="OS" />
   <img src="https://img.shields.io/badge/Python-3.10+-blue?style=flat-square" alt="Python" />
@@ -29,7 +30,9 @@
 
 本仓库是 **Skill + CLI + 精简预置图包**（`packs/official-001/`，约 **2.5MB / 52 张**，含 caption 与 embedding，开箱可搜）。完整上游包可自行扩容；图片版权见包内 `CREDITS.md`。
 
-想顺便换一套损友人设？可另装人格 Skill **[suki](https://github.com/yyh-001/suki)**（本仓不含人设，两者独立、可选搭配）。
+想顺便换一套聊天搭子人设？可另装人格 Skill **[suki](https://github.com/yyh-001/suki)**（本仓不含人设，两者独立、可选搭配）。
+
+交流 / 反馈：**QQ 群 [993579665](https://qm.qq.com/q/993579665)**
 
 ---
 

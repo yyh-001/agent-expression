@@ -74,7 +74,7 @@ curl -fsSL https://raw.githubusercontent.com/yyh-001/agent-expression/main/insta
 
 ### 腾讯 SkillHub（国内）
 
-国内商店：[skillhub.cn](https://www.skillhub.cn/)。审核通过后可搜 `agent-expression`。
+国内商店：[skillhub.cn](https://www.skillhub.cn/)，可搜 `agent-expression`。
 
 ```bash
 # 安装 CLI（仅 CLI）

@@ -98,11 +98,12 @@ MEDIA:/absolute/path/to/meme.png
 
 ## 宿主适配
 
-一行安装默认多宿主软链（Cursor / Claude Code / Codex / Agents / Hermes）。
+一行安装默认多宿主链接（Cursor / Claude Code / Codex / Agents / Hermes）。
 
-- 路径与发图约定：[references/hosts.md](references/hosts.md)
+- 路径与发图约定（含 **Windows**）：[references/hosts.md](references/hosts.md)
+- Windows：`install.ps1`；macOS/Linux：`install.sh`
 - Hermes 可选原生工具：[hermes-tools/](hermes-tools/)
-- 契约：脚本返回真实绝对路径；`MEDIA:` 仅部分网关需要。
+- 契约：脚本返回真实绝对路径；`MEDIA:` 仅部分网关需要。临时目录用系统 TEMP（跨平台）。
 
 ## License
 

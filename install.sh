@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # One-line install (multi-host by default):
-#   curl -fsSL https://raw.githubusercontent.com/yyh-001/agent-expression/main/install.sh | bash
+#   macOS/Linux:
+#     curl -fsSL https://raw.githubusercontent.com/yyh-001/agent-expression/main/install.sh | bash
+#   Windows PowerShell:
+#     irm https://raw.githubusercontent.com/yyh-001/agent-expression/main/install.ps1 | iex
 #
 # Clones once to ~/.agent-expression/skill, then symlinks into mainstream
 # Agent / IDE skill directories (Cursor, Claude Code, Codex, Agents, Hermes…).

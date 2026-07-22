@@ -109,6 +109,39 @@ def load_dotenv_merged() -> dict[str, str]:
     return out
 
 
+def temp_workdir(name: str = "agent-expression-meme") -> Path:
+    """Cross-platform scratch dir (Windows TEMP / Unix /tmp)."""
+    import tempfile
+
+    d = Path(tempfile.gettempdir()) / name
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
+def system_temp_roots() -> list[Path]:
+    """Allowed temp roots for path sandboxing."""
+    import tempfile
+
+    roots: list[Path] = []
+    for key in ("TMPDIR", "TEMP", "TMP"):
+        v = os.environ.get(key, "").strip()
+        if v:
+            roots.append(Path(v).expanduser().resolve())
+    roots.append(Path(tempfile.gettempdir()).resolve())
+    # Unix fallback still listed for mixed environments
+    for p in (Path("/tmp"), Path("/var/tmp")):
+        if p.is_dir():
+            roots.append(p.resolve())
+    # de-dupe preserving order
+    seen: set[Path] = set()
+    out: list[Path] = []
+    for r in roots:
+        if r not in seen:
+            seen.add(r)
+            out.append(r)
+    return out
+
+
 def db_path_for_pack(pack_dir: Path) -> Path:
     return pack_dir / "index.db"
 

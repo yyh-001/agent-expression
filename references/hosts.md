@@ -58,13 +58,19 @@ send_image(path)
 
 搜失败或发不出去 → 只回文字。
 
+## Windows
+
+| 方式 | 说明 |
+|------|------|
+| **推荐** | PowerShell：`irm …/install.ps1 \| iex`（见 README） |
+| 链接 | 优先 **目录联接 Junction**（一般无需管理员）；失败则整目录复制 |
+| Python | `python` 或 `py -3`；脚本基于 `pathlib`，正反斜杠均可 |
+| 临时目录 | `%TEMP%`（不再写死 `/tmp`） |
+| Git Bash / WSL | 也可跑 `install.sh` |
+
 ## 数据目录
 
-优先 `$MEME_PACK`；否则 `$MEME_HOME/meme-packs/$MEME_PACK_ID`。  
+优先 `$MEME_PACK` / `%MEME_PACK%`；否则 `$MEME_HOME/meme-packs/$MEME_PACK_ID`。  
 未设时：若已有 `~/.hermes/meme-packs/` 则沿用，否则 `~/.agent-expression`。
 
 兼容别名：`HERMES_HOME` / `HERMES_MEME_PACK*`。
-
-## Windows
-
-推荐 Git Bash 或 WSL 跑 `install.sh`。若无法创建符号链接，脚本会 **复制** 一份到各宿主目录（更新时请再跑安装命令）。

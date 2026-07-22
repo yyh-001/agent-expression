@@ -319,8 +319,7 @@ def main(argv: list[str] | None = None) -> int:
             }
         )
 
-    tmp_dir = Path(os.environ.get("TMPDIR", "/tmp")) / "agent-expression-meme"
-    tmp_dir.mkdir(parents=True, exist_ok=True)
+    tmp_dir = _load_mdb().temp_workdir()
 
     try:
         local = source_to_local(args.source, tmp_dir)

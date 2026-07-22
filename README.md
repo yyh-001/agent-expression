@@ -9,7 +9,7 @@
 <p align="center">
   <a href="./SKILL.md"><img src="https://img.shields.io/badge/Skill-agent--expression-amber?style=flat-square" alt="Skill" /></a>
   <img src="https://img.shields.io/badge/Host-agnostic-informational?style=flat-square" alt="Host agnostic" />
-  <img src="https://img.shields.io/badge/Python-3.10+-blue?style=flat-square" alt="Python" />
+  <img src="https://img.shields.io/badge/OS-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey?style=flat-square" alt="OS" />
   <a href="./LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="MIT" /></a>
 </p>
 
@@ -30,11 +30,21 @@
 
 ## 一行安装
 
+**macOS / Linux**
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/yyh-001/agent-expression/main/install.sh | bash
 ```
 
-默认：**一份内容**装到 `~/.agent-expression/skill/`，并软链到主流 Agent / IDE：
+**Windows（PowerShell）**
+
+```powershell
+irm https://raw.githubusercontent.com/yyh-001/agent-expression/main/install.ps1 | iex
+```
+
+需已安装 [Git for Windows](https://git-scm.com/download/win) 与 Python 3.10+（`python` / `py`）。
+
+默认：**一份内容**装到 `~/.agent-expression/skill/`（Windows：`%USERPROFILE%\.agent-expression\skill\`），并链到主流 Agent / IDE：
 
 | 路径 | 覆盖 |
 |------|------|
@@ -45,16 +55,19 @@ curl -fsSL https://raw.githubusercontent.com/yyh-001/agent-expression/main/insta
 | `~/.hermes/skills/media/agent-expression` | 若已装 Hermes |
 
 ```bash
-# 当前仓库也挂上（项目级）
+# macOS/Linux：当前仓库 / 单宿主
 curl -fsSL …/install.sh | bash -s -- --project
-
-# 只装某一个宿主
 curl -fsSL …/install.sh | bash -s -- --cursor
-curl -fsSL …/install.sh | bash -s -- --claude
-curl -fsSL …/install.sh | bash -s -- --hermes
 ```
 
-完整宿主说明：[references/hosts.md](./references/hosts.md)
+```powershell
+# Windows
+irm …/install.ps1 -OutFile $env:TEMP\ae-install.ps1
+powershell -ExecutionPolicy Bypass -File $env:TEMP\ae-install.ps1 -Project
+powershell -ExecutionPolicy Bypass -File $env:TEMP\ae-install.ps1 -Cursor
+```
+
+完整宿主说明（含 Windows）：[references/hosts.md](./references/hosts.md)
 
 ## 装完三步
 
@@ -62,8 +75,10 @@ curl -fsSL …/install.sh | bash -s -- --hermes
 # 1) 放图包到 memes/<tag>/
 #    推荐：https://github.com/anka-afk/astrbot-meme-pack-official-01
 
-# 2) 建索引（不用 API）
+# 2) 建索引（不用 API）—— Windows 可用 python / py -3
 python3 ~/.agent-expression/skill/scripts/index-memes.py --sync-only
+# Windows 示例：
+#   py -3 %USERPROFILE%\.agent-expression\skill\scripts\index-memes.py --sync-only
 
 # 3) 搜一张
 python3 ~/.agent-expression/skill/scripts/search-meme.py "无语" --pick

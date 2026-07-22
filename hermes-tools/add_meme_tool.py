@@ -101,14 +101,16 @@ def _assert_safe_source(source: str) -> str:
     allowed_roots = [
         home,
         Path("~/.hermes").expanduser().resolve(),
-        Path("/tmp"),
-        Path(os.environ.get("TMPDIR", "/tmp")).resolve(),
+        Path("~/.agent-expression").expanduser().resolve(),
     ]
     try:
         mdb = _load_module("ae_meme_db_safe", "meme_db.py")
         allowed_roots.append(mdb.default_pack_dir().resolve())
+        allowed_roots.extend(mdb.system_temp_roots())
     except Exception:
-        pass
+        import tempfile
+
+        allowed_roots.append(Path(tempfile.gettempdir()).resolve())
     ok = False
     for root in allowed_roots:
         try:
@@ -304,8 +306,13 @@ def add_meme_tool(
     if not pack_dir.is_dir():
         return tool_error(f"meme pack not found: {pack_dir}")
 
-    tmp_dir = Path(os.environ.get("TMPDIR", "/tmp")) / "agent-expression-meme"
-    tmp_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        tmp_dir = mdb.temp_workdir()
+    except Exception:
+        import tempfile
+
+        tmp_dir = Path(tempfile.gettempdir()) / "agent-expression-meme"
+        tmp_dir.mkdir(parents=True, exist_ok=True)
 
     try:
         local = cl.source_to_local(source, tmp_dir)

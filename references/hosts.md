@@ -91,7 +91,16 @@ path = subprocess(search-meme.py … --pick)
 send_image(path)
 ```
 
-装完请**新开会话**加载 Skill。ClawHub 包不含 `packs/`，仅装 registry 版时需再拉 Git / 跑安装脚本。
+装完请**新开会话**加载 Skill。ClawHub / SkillHub 包都不含 `packs/` 图片；仅装商店版时需再拉 Git / 跑安装脚本。
+
+### 腾讯 SkillHub
+
+```bash
+curl -fsSL https://skillhub.cn/install/install.sh | bash -s -- --cli-only
+skillhub install agent-expression --dir <你的 skills 目录>
+# 图包：
+curl -fsSL https://raw.githubusercontent.com/yyh-001/agent-expression/main/install.sh | bash
+```
 
 ### QQ / Telegram / 自建 bot
 

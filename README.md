@@ -8,6 +8,8 @@
 
 <p align="center">
   <a href="./SKILL.md"><img src="https://img.shields.io/badge/Skill-agent--expression-amber?style=flat-square" alt="Skill" /></a>
+  <a href="https://clawhub.ai"><img src="https://img.shields.io/badge/ClawHub-agent--expression-orange?style=flat-square" alt="ClawHub" /></a>
+  <a href="https://www.skillhub.cn/"><img src="https://img.shields.io/badge/SkillHub-agent--expression-00a4ff?style=flat-square" alt="SkillHub" /></a>
   <img src="https://img.shields.io/badge/Host-agnostic-informational?style=flat-square" alt="Host agnostic" />
   <img src="https://img.shields.io/badge/OS-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey?style=flat-square" alt="OS" />
   <img src="https://img.shields.io/badge/Python-3.10+-blue?style=flat-square" alt="Python" />
@@ -68,11 +70,29 @@ openclaw skills install git:yyh-001/agent-expression@main
 curl -fsSL https://raw.githubusercontent.com/yyh-001/agent-expression/main/install.sh | bash
 ```
 
-说明：
+### 腾讯 SkillHub（国内）
 
-- ClawHub / `@yyh-001/agent-expression` 发布的是 **Skill + 脚本**，**不含** `packs/` 图与 embedding；能搜图前请用 ③，或装完再跑 `install.sh`。
-- 国内访问慢可试腾讯 SkillHub 等 ClawHub 镜像（若已收录同名 skill），命令以各站文档为准；源头仍是 ClawHub / GitHub。
-- 网页浏览：[clawhub.ai](https://clawhub.ai) 搜 `agent-expression`。
+国内商店：[skillhub.cn](https://www.skillhub.cn/)。审核通过后可搜 `agent-expression`。
+
+```bash
+# 安装 CLI（仅 CLI）
+curl -fsSL https://skillhub.cn/install/install.sh | bash -s -- --cli-only
+
+skillhub search agent-expression
+skillhub install agent-expression --dir ~/.agents/skills   # 目录按你的 Agent 改
+# OpenClaw 示例：
+# skillhub install agent-expression --dir ~/.openclaw/skills
+```
+
+### 商店包 vs 完整图包
+
+| 来源 | 有什么 | 搜图前还要做什么 |
+|------|--------|------------------|
+| **GitHub / `install.sh`** | Skill + 脚本 + 精简 `packs/`（约 2.5MB） | 一般可直接搜 |
+| **ClawHub / OpenClaw `@yyh-001/…`** | Skill + 脚本 | 再跑 `install.sh`，或 `git:yyh-001/agent-expression@main` |
+| **腾讯 SkillHub** | Skill + 脚本（平台不允许上传图片） | 同上，用 GitHub 拉图包 |
+
+网页：[clawhub.ai](https://clawhub.ai) / [skillhub.cn](https://www.skillhub.cn/) 搜 `agent-expression`。
 
 ### Hermes
 
@@ -187,7 +207,8 @@ python3 scripts/add-meme.py happy ./x.gif           # 指定标签入库
 
 | 你在用 | 怎么接 |
 |--------|--------|
-| **OpenClaw（龙虾）** | `openclaw skills install @yyh-001/agent-expression`；要图包再 Git/`install.sh`（见上）→ `send_image(path)` |
+| **OpenClaw（龙虾）** | `openclaw skills install @yyh-001/agent-expression`；要图包再 Git/`install.sh` → `send_image(path)` |
+| **腾讯 SkillHub** | `skillhub install agent-expression --dir <skills目录>`；图包另用 GitHub/`install.sh` |
 | Cursor | 用户级 skill 已链好；搜到图后 `open_resource(file:///…)` 预览，见 [hosts](./references/hosts.md) |
 | Claude / Codex | 附件或回路径；对话里可提「发个表情包」 |
 | [Hermes](https://github.com/NousResearch/hermes-agent) | 同上；可选 [`hermes-tools/`](./hermes-tools/) 原生工具 |

@@ -87,14 +87,17 @@ python3 …/scripts/index-memes.py --sync-only   # 或 --workers 做 caption
 python3 …/scripts/embed-memes.py
 ```
 
-Agent 拿到路径后交给宿主发图。例如支持 `MEDIA:` 的网关：
+Agent 拿到路径后交给宿主：
+
+- **Cursor**：`open_resource(file:///绝对路径)` 在编辑器预览（不要 `MEDIA:`）
+- **Hermes** 等网关：
 
 ```text
 行吧你赢了
 MEDIA:/abs/path/to/meme.jpg
 ```
 
-其它宿主怎么贴图 → [references/hosts.md](./references/hosts.md)
+详见 [references/hosts.md](./references/hosts.md)
 
 ---
 

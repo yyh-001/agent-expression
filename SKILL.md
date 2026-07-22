@@ -3,9 +3,9 @@ name: agent-expression
 description: >
   Local meme/sticker pack for chat agents: search by mood (vector+FTS),
   vision ingest, emit real absolute image paths only. Never invent paths or ls|shuf.
-  Use when sending stickers/memes, learning user images into a pack, or wiring
-  MEDIA:/path delivery on Hermes, Cursor, Claude Code, OpenClaw, or any shell-capable agent.
-version: 2.1.0
+  On Cursor: open_resource(file:///…) to preview in editor (not MEDIA:/ chat bubbles).
+  On Hermes: MEDIA:/path. Use when sending/previewing stickers or ingesting user images.
+version: 2.1.1
 author: yyh-001
 license: MIT
 platforms: [linux, macos, windows]
@@ -22,11 +22,20 @@ metadata:
 
 1. **禁止手写图片路径**（不准猜文件名、不准漏 `memes/`）。
 2. **禁止** `ls|shuf`、`find`、自己扫目录挑图。
-3. 发图 → 先跑检索脚本（或宿主原生工具）；入库 → 用入库脚本。
+3. 发图 / 预览 → 先跑检索脚本（或宿主原生工具）；入库 → 用入库脚本。
 4. 失败 → 只回文字。
-5. 输出：**绝对路径**；宿主若支持 `MEDIA:`，正文后单独一行 `MEDIA:/abs/path`。
+5. 输出：**绝对路径**；再按宿主投递（见下）。**不要**默认输出 `MEDIA:`（仅 Hermes 等网关需要）。
 
-投递格式因宿主而异，见 [references/hosts.md](references/hosts.md)。
+### 按宿主投递
+
+| 宿主 | 做法 |
+|------|------|
+| **Cursor** | 拿到绝对路径后，用 MCP `open_resource` 打开 `file:///<绝对路径>` 预览；**不要**用 `MEDIA:`；**不要**只丢路径指望聊天气泡出图。若路径不在工作区 / `~/.cursor` 被拒，先拷到工作区 `.meme-preview/` 再打开。详见 [references/hosts.md](references/hosts.md)。 |
+| **Hermes** | 正文 + 单独一行 `MEDIA:/abs/path` |
+| **自建 bot** | `send_image(path)` 或平台等价 API |
+| **其它** | 有附件则附文件，否则回路径 / 纯文字 |
+
+投递格式全文见 [references/hosts.md](references/hosts.md)。
 
 ## 路径约定（通用）
 

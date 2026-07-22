@@ -34,13 +34,39 @@
 
 Cursor 还会自动发现 monorepo 子目录下的 `.cursor/skills/`。
 
-## 按宿主怎么发图
+## 按宿主怎么发图 / 预览
 
-### Cursor / Claude Code / Codex / VS Code 类 Agent
+### Cursor IDE（仅预览，非聊天发图）
+
+Cursor **不支持**聊天气泡内联斗图；也不要指望 Markdown / 纯路径字符串出图。推荐用 MCP `open_resource` 在编辑器里打开本地文件。
+
+1. `python scripts/search-meme.py "<query>" --pick`（或 `py -3 …`）→ stdout **一行真实绝对路径**
+2. 调用 Cursor MCP：`open_resource`
+   - `uri`: `file:///<绝对路径>`
+   - Windows 例：`C:\Users\yyh\...\x.jpg` → `file:///C:/Users/yyh/.../x.jpg`（盘符后用 `/`，反斜杠改正斜杠）
+3. 用户在编辑器 / Glass 侧栏看图；**不要**输出 `MEDIA:`（那是 Hermes）
+4. 可选：顺带 `Read` 该路径，让模型自己看见画面
+
+**路径限制（重要）：** `open_resource` 的 `file://` 须在 **当前 Agent 工作区** 或 **`~/.cursor/`** 下。  
+若检索结果在 `~/.agent-expression/` / `~/.hermes/` 等目录被拒绝：
+
+- **备选 A**：把文件复制到工作区 `.meme-preview/`，再 `open_resource(file:///<workspace>/.meme-preview/…)`
+- **备选 B**：若 skill 已链到 `~/.cursor/skills/agent-expression/`，优先用该树下的路径（仍在 `~/.cursor` 内）
+
+```text
+path = run(search-meme.py "无语" --pick)   # 必须真实存在
+uri  = "file:///" + path.replace("\\", "/")  # Windows 盘符保持 C:/...
+open_resource(uri)
+# 若失败 → copy 到 .meme-preview/ 再 open_resource
+```
+
+不要为 Cursor 单独编假路径；不要依赖聊天气泡 Markdown 出图。
+
+### Claude Code / Codex / 其它 coding Agent
 
 - 读 `SKILL.md`，执行 `scripts/search-meme.py … --pick`
-- 对话支持附件时：把返回路径作为本地图片附上
-- 不支持发图时：把路径写给用户，或只回文字
+- 有附件能力则附上本地文件；否则回路径或只回文字
+- 无 `open_resource` 时不要假装已预览
 
 ### Hermes
 

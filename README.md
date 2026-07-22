@@ -45,6 +45,14 @@ curl -fsSL https://raw.githubusercontent.com/yyh-001/agent-expression/main/insta
 irm https://raw.githubusercontent.com/yyh-001/agent-expression/main/install.ps1 | iex
 ```
 
+**ClawHub**
+
+```bash
+clawhub install agent-expression
+```
+
+ClawHub 包是 Skill + 脚本（**不含**完整 `packs/` 图包）。装完请再跑上面的 `install.sh` / `install.ps1`，或从 GitHub clone，以拿到预置图 + embedding。
+
 **Hermes**
 
 因仓库含预置图包（约 80MB），请用安装脚本（会链到 `~/.hermes/skills/media/agent-expression/`），**不要**只 `hermes skills install` 一个 `SKILL.md` URL（拉不全 `packs/`）。

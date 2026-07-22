@@ -5,7 +5,7 @@ description: >
   vision ingest, emit real absolute image paths only. Never invent paths or ls|shuf.
   On Cursor: open_resource(file:///…) to preview in editor (not MEDIA:/ chat bubbles).
   On Hermes: MEDIA:/path. Use when sending/previewing stickers or ingesting user images.
-version: 2.1.1
+version: 2.2.0
 author: yyh-001
 license: MIT
 platforms: [linux, macos, windows]
@@ -54,8 +54,8 @@ $MEME_HOME/meme-packs/<pack-id>/
 
 兼容别名：`HERMES_MEME_PACK` / `HERMES_MEME_PACK_ID` / `HERMES_HOME`。
 
-推荐图包已内置：`packs/official-001/`（含 caption + embedding-3 向量，路径为包内相对路径）。  
-安装脚本会部署到 `$MEME_HOME/meme-packs/official-001/`。上游图源见包内 `CREDITS.md`。
+推荐图包已内置：`packs/official-001/`（精简 starter：约 50 张常用标签图 + caption + embedding-3，路径为包内相对路径）。  
+安装脚本会部署到 `$MEME_HOME/meme-packs/official-001/`。上游完整图源见包内 `CREDITS.md`。
 
 ## CLI（任意能跑 shell 的 Agent）
 

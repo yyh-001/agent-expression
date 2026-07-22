@@ -10,7 +10,6 @@
   <a href="./SKILL.md"><img src="https://img.shields.io/badge/Skill-agent--expression-amber?style=flat-square" alt="Skill" /></a>
   <a href="https://clawhub.ai"><img src="https://img.shields.io/badge/ClawHub-agent--expression-orange?style=flat-square" alt="ClawHub" /></a>
   <a href="https://www.skillhub.cn/"><img src="https://img.shields.io/badge/SkillHub-agent--expression-00a4ff?style=flat-square" alt="SkillHub" /></a>
-  <a href="https://qm.qq.com/q/993579665"><img src="https://img.shields.io/badge/QQ群-993579665-12b7f5?style=flat-square" alt="QQ群" /></a>
   <img src="https://img.shields.io/badge/Host-agnostic-informational?style=flat-square" alt="Host agnostic" />
   <img src="https://img.shields.io/badge/OS-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey?style=flat-square" alt="OS" />
   <img src="https://img.shields.io/badge/Python-3.10+-blue?style=flat-square" alt="Python" />

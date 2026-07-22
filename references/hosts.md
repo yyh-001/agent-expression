@@ -73,7 +73,27 @@ open_resource(uri)
 - 正文 + 单独一行 `MEDIA:/abs/path`
 - 可选：`hermes-tools/` → `search_meme` / `add_meme`
 
-### OpenClaw / QQ / Telegram / 自建 bot
+### OpenClaw（龙虾）
+
+安装见根目录 [README](../README.md#openclaw龙虾)：
+
+```bash
+openclaw skills install @yyh-001/agent-expression
+# 要预置图包：
+openclaw skills install git:yyh-001/agent-expression@main
+# 或 curl …/install.sh | bash
+```
+
+发图：
+
+```text
+path = subprocess(search-meme.py … --pick)
+send_image(path)
+```
+
+装完请**新开会话**加载 Skill。ClawHub 包不含 `packs/`，仅装 registry 版时需再拉 Git / 跑安装脚本。
+
+### QQ / Telegram / 自建 bot
 
 ```text
 path = subprocess(search-meme.py … --pick)

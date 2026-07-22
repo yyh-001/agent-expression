@@ -45,15 +45,36 @@ curl -fsSL https://raw.githubusercontent.com/yyh-001/agent-expression/main/insta
 irm https://raw.githubusercontent.com/yyh-001/agent-expression/main/install.ps1 | iex
 ```
 
-**ClawHub**
+需已安装 [Git for Windows](https://git-scm.com/download/win) 与 Python 3.10+（`python` / `py`）。
+
+### OpenClaw（龙虾）
+
+[OpenClaw](https://docs.openclaw.ai/tools/skills) 推荐用内置 skills 命令或 [ClawHub](https://clawhub.ai) CLI。装完后**新开一轮会话**才会加载 Skill。
 
 ```bash
+# ① 推荐：OpenClaw 从 ClawHub 安装
+openclaw skills install @yyh-001/agent-expression
+# 装到本机共用目录（多 agent 可见）：
+openclaw skills install @yyh-001/agent-expression --global
+
+# ② 等价：ClawHub CLI
+npm i -g clawhub          # 若尚未安装
+clawhub search agent-expression
 clawhub install agent-expression
+
+# ③ 要预置图包（约 2.5MB）时：从 Git 装整仓，或再跑一行安装脚本
+openclaw skills install git:yyh-001/agent-expression@main
+# 或：
+curl -fsSL https://raw.githubusercontent.com/yyh-001/agent-expression/main/install.sh | bash
 ```
 
-ClawHub 包是 Skill + 脚本（**不含**完整 `packs/` 图包）。装完请再跑上面的 `install.sh` / `install.ps1`，或从 GitHub clone，以拿到预置图 + embedding。
+说明：
 
-**Hermes**
+- ClawHub / `@yyh-001/agent-expression` 发布的是 **Skill + 脚本**，**不含** `packs/` 图与 embedding；能搜图前请用 ③，或装完再跑 `install.sh`。
+- 国内访问慢可试腾讯 SkillHub 等 ClawHub 镜像（若已收录同名 skill），命令以各站文档为准；源头仍是 ClawHub / GitHub。
+- 网页浏览：[clawhub.ai](https://clawhub.ai) 搜 `agent-expression`。
+
+### Hermes
 
 因仓库含预置图包，请用安装脚本（会链到 `~/.hermes/skills/media/agent-expression/`），**不要**只 `hermes skills install` 一个 `SKILL.md` URL（拉不全 `packs/`）。
 
@@ -63,8 +84,6 @@ curl -fsSL https://raw.githubusercontent.com/yyh-001/agent-expression/main/insta
 git clone --depth 1 https://github.com/yyh-001/agent-expression.git \
   ~/.hermes/skills/media/agent-expression
 ```
-
-需已安装 [Git for Windows](https://git-scm.com/download/win) 与 Python 3.10+（`python` / `py`）。
 
 默认：**一份内容**装到 `~/.agent-expression/skill/`（Windows：`%USERPROFILE%\.agent-expression\skill\`），并链到主流 Agent / IDE：
 
@@ -168,6 +187,7 @@ python3 scripts/add-meme.py happy ./x.gif           # 指定标签入库
 
 | 你在用 | 怎么接 |
 |--------|--------|
+| **OpenClaw（龙虾）** | `openclaw skills install @yyh-001/agent-expression`；要图包再 Git/`install.sh`（见上）→ `send_image(path)` |
 | Cursor | 用户级 skill 已链好；搜到图后 `open_resource(file:///…)` 预览，见 [hosts](./references/hosts.md) |
 | Claude / Codex | 附件或回路径；对话里可提「发个表情包」 |
 | [Hermes](https://github.com/NousResearch/hermes-agent) | 同上；可选 [`hermes-tools/`](./hermes-tools/) 原生工具 |

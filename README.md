@@ -27,6 +27,8 @@
 
 本仓库是 **Skill + CLI + 预置图包**（`packs/official-001/`，含 caption 与 embedding，开箱可搜）。图片版权见包内 `CREDITS.md`。
 
+想顺便换一套损友人设？可另装人格 Skill **[suki](https://github.com/yyh-001/suki)**（本仓不含人设，两者独立、可选搭配）。
+
 ---
 
 ## 一行安装
@@ -163,11 +165,13 @@ python3 scripts/add-meme.py happy ./x.gif           # 指定标签入库
 | [Hermes](https://github.com/NousResearch/hermes-agent) | 同上；可选 [`hermes-tools/`](./hermes-tools/) 原生工具 |
 | 任意能跑 shell 的 Agent | 执行 `scripts/`，发返回的绝对路径 |
 | 自建 bot | `subprocess(search-meme.py --pick)` → `send_image(path)` |
+| 损友人设（可选） | 另装 [suki](https://github.com/yyh-001/suki)；不要把图包塞进人设仓 |
 
 ```text
 agent-expression/
   SKILL.md         Agent 说明书（通用）
   scripts/         检索 · 索引 · 入库 · 嵌入
+  packs/           预置图 + index.db + 向量
   hermes-tools/    可选 Hermes 适配
   references/      schema · 标签 · 宿主约定
   assets/cover.jpg

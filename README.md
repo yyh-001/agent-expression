@@ -147,7 +147,8 @@ python3 scripts/add-meme.py happy ./x.gif           # 指定标签入库
 
 | 你在用 | 怎么接 |
 |--------|--------|
-| Cursor / Claude / Codex | 用户级 skill 已链好；对话里提「发个表情包」或 `/agent-expression` |
+| Cursor | 用户级 skill 已链好；搜到图后 `open_resource(file:///…)` 预览，见 [hosts](./references/hosts.md) |
+| Claude / Codex | 附件或回路径；对话里可提「发个表情包」 |
 | [Hermes](https://github.com/NousResearch/hermes-agent) | 同上；可选 [`hermes-tools/`](./hermes-tools/) 原生工具 |
 | 任意能跑 shell 的 Agent | 执行 `scripts/`，发返回的绝对路径 |
 | 自建 bot | `subprocess(search-meme.py --pick)` → `send_image(path)` |

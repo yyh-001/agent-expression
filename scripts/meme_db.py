@@ -1,0 +1,328 @@
+#!/usr/bin/env python3
+"""SQLite index for local meme packs: path + tag + caption/keywords + search."""
+
+from __future__ import annotations
+
+import hashlib
+import os
+import re
+import sqlite3
+import time
+from pathlib import Path
+from typing import Iterable, Optional
+
+IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp"}
+
+SCHEMA = """
+CREATE TABLE IF NOT EXISTS memes (
+  path TEXT PRIMARY KEY,
+  tag TEXT NOT NULL,
+  file_name TEXT NOT NULL,
+  file_hash TEXT,
+  caption TEXT NOT NULL DEFAULT '',
+  keywords TEXT NOT NULL DEFAULT '',
+  mtime REAL,
+  captioned_at REAL
+);
+CREATE INDEX IF NOT EXISTS idx_memes_tag ON memes(tag);
+CREATE INDEX IF NOT EXISTS idx_memes_captioned ON memes(captioned_at);
+
+CREATE VIRTUAL TABLE IF NOT EXISTS memes_fts USING fts5(
+  path UNINDEXED,
+  tag,
+  caption,
+  keywords,
+  file_name,
+  tokenize = 'unicode61'
+);
+"""
+
+
+def default_pack_dir() -> Path:
+    override = os.environ.get("HERMES_MEME_PACK", "").strip()
+    if override:
+        return Path(override).expanduser()
+    home = Path(os.environ.get("HERMES_HOME", "~/.hermes")).expanduser()
+    pack_id = os.environ.get("HERMES_MEME_PACK_ID", "official-001").strip() or "official-001"
+    return home / "meme-packs" / pack_id
+
+
+def db_path_for_pack(pack_dir: Path) -> Path:
+    return pack_dir / "index.db"
+
+
+def connect(pack_dir: Path) -> sqlite3.Connection:
+    pack_dir.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(str(db_path_for_pack(pack_dir)))
+    conn.row_factory = sqlite3.Row
+    conn.executescript(SCHEMA)
+    return conn
+
+
+def file_hash(path: Path, max_bytes: int = 1024 * 1024) -> str:
+    h = hashlib.sha1()
+    with path.open("rb") as f:
+        while True:
+            chunk = f.read(65536)
+            if not chunk:
+                break
+            h.update(chunk)
+            if f.tell() >= max_bytes:
+                break
+    return h.hexdigest()
+
+
+def iter_pack_images(pack_dir: Path) -> Iterable[tuple[str, Path]]:
+    memes_root = pack_dir / "memes"
+    if not memes_root.is_dir():
+        return
+    for tag_dir in sorted(memes_root.iterdir()):
+        if not tag_dir.is_dir():
+            continue
+        tag = tag_dir.name
+        for path in sorted(tag_dir.iterdir()):
+            if path.is_file() and path.suffix.lower() in IMAGE_EXTS:
+                yield tag, path.resolve()
+
+
+def _fts_sync(conn: sqlite3.Connection, path: str, tag: str, file_name: str,
+              caption: str, keywords: str) -> None:
+    conn.execute("DELETE FROM memes_fts WHERE path = ?", (path,))
+    conn.execute(
+        "INSERT INTO memes_fts(path, tag, caption, keywords, file_name) VALUES (?,?,?,?,?)",
+        (path, tag, caption or "", keywords or "", file_name),
+    )
+
+
+def upsert_meme(
+    conn: sqlite3.Connection,
+    *,
+    path: Path,
+    tag: str,
+    caption: Optional[str] = None,
+    keywords: Optional[str] = None,
+    keep_caption: bool = True,
+) -> None:
+    path = path.resolve()
+    path_s = str(path)
+    mtime = path.stat().st_mtime
+    fhash = file_hash(path)
+    row = conn.execute("SELECT caption, keywords, file_hash FROM memes WHERE path=?", (path_s,)).fetchone()
+
+    new_caption = caption
+    new_keywords = keywords
+    captioned_at = None
+    if row and keep_caption and caption is None:
+        new_caption = row["caption"]
+        new_keywords = row["keywords"]
+        # keep captioned_at if hash unchanged and caption exists
+    if caption is not None:
+        captioned_at = time.time()
+
+    if row is None:
+        conn.execute(
+            """INSERT INTO memes(path, tag, file_name, file_hash, caption, keywords, mtime, captioned_at)
+               VALUES (?,?,?,?,?,?,?,?)""",
+            (
+                path_s,
+                tag,
+                path.name,
+                fhash,
+                new_caption or "",
+                new_keywords or "",
+                mtime,
+                captioned_at,
+            ),
+        )
+    else:
+        # If file changed and caller didn't pass new caption, clear caption so it gets re-captioned
+        if row["file_hash"] != fhash and caption is None and keep_caption:
+            new_caption = ""
+            new_keywords = ""
+            captioned_at = None
+        elif caption is None:
+            captioned_at = conn.execute(
+                "SELECT captioned_at FROM memes WHERE path=?", (path_s,)
+            ).fetchone()["captioned_at"]
+        conn.execute(
+            """UPDATE memes SET tag=?, file_name=?, file_hash=?, caption=?, keywords=?, mtime=?,
+               captioned_at=COALESCE(?, captioned_at) WHERE path=?""",
+            (
+                tag,
+                path.name,
+                fhash,
+                new_caption if new_caption is not None else row["caption"],
+                new_keywords if new_keywords is not None else row["keywords"],
+                mtime,
+                captioned_at,
+                path_s,
+            ),
+        )
+
+    final = conn.execute(
+        "SELECT tag, file_name, caption, keywords FROM memes WHERE path=?", (path_s,)
+    ).fetchone()
+    _fts_sync(
+        conn,
+        path_s,
+        final["tag"],
+        final["file_name"],
+        final["caption"] or "",
+        final["keywords"] or "",
+    )
+
+
+def sync_files(conn: sqlite3.Connection, pack_dir: Path) -> dict:
+    """Scan pack on disk; upsert rows; delete missing. Returns counts."""
+    seen: set[str] = set()
+    added = updated = 0
+    for tag, path in iter_pack_images(pack_dir):
+        path_s = str(path)
+        seen.add(path_s)
+        before = conn.execute("SELECT file_hash FROM memes WHERE path=?", (path_s,)).fetchone()
+        upsert_meme(conn, path=path, tag=tag, keep_caption=True)
+        if before is None:
+            added += 1
+        else:
+            updated += 1
+    # prune
+    rows = conn.execute("SELECT path FROM memes").fetchall()
+    deleted = 0
+    for r in rows:
+        if r["path"] not in seen:
+            conn.execute("DELETE FROM memes_fts WHERE path=?", (r["path"],))
+            conn.execute("DELETE FROM memes WHERE path=?", (r["path"],))
+            deleted += 1
+    conn.commit()
+    return {"added": added, "scanned": len(seen), "deleted": deleted}
+
+
+def needs_caption(conn: sqlite3.Connection) -> list[sqlite3.Row]:
+    return list(
+        conn.execute(
+            """SELECT path, tag, file_name FROM memes
+               WHERE caption IS NULL OR caption = '' OR captioned_at IS NULL
+               ORDER BY tag, file_name"""
+        )
+    )
+
+
+def _escape_like(s: str) -> str:
+    return s.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
+def search(
+    conn: sqlite3.Connection,
+    query: str,
+    *,
+    tag: Optional[str] = None,
+    limit: int = 5,
+) -> list[dict]:
+    """Search by caption/keywords/tag. Returns list of dicts with path, tag, caption, score."""
+    q = (query or "").strip()
+    if not q and not tag:
+        return []
+
+    # Prefer FTS when query present; always allow tag filter.
+    results: list[dict] = []
+    if q:
+        # Build FTS query: quote tokens, join with OR for recall
+        tokens = [t for t in re.split(r"\s+", q) if t]
+        fts_parts = []
+        for t in tokens:
+            safe = t.replace('"', " ")
+            if safe:
+                fts_parts.append(f'"{safe}"')
+        fts_q = " OR ".join(fts_parts) if fts_parts else None
+
+        rows = []
+        if fts_q:
+            sql = """
+              SELECT m.path, m.tag, m.caption, m.keywords, m.file_name,
+                     bm25(memes_fts) AS rank
+              FROM memes_fts
+              JOIN memes m ON m.path = memes_fts.path
+              WHERE memes_fts MATCH ?
+            """
+            params: list = [fts_q]
+            if tag:
+                sql += " AND m.tag = ?"
+                params.append(tag)
+            sql += " ORDER BY rank LIMIT ?"
+            params.append(max(limit * 3, limit))
+            try:
+                rows = list(conn.execute(sql, params))
+            except sqlite3.OperationalError:
+                rows = []
+
+        # LIKE fallback / supplement for Chinese phrases FTS may miss as wholes
+        like_sql = """
+          SELECT path, tag, caption, keywords, file_name, 0 AS rank
+          FROM memes WHERE 1=1
+        """
+        like_params: list = []
+        if tag:
+            like_sql += " AND tag = ?"
+            like_params.append(tag)
+        clauses = []
+        for t in tokens:
+            esc = f"%{_escape_like(t)}%"
+            clauses.append(
+                "(caption LIKE ? ESCAPE '\\' OR keywords LIKE ? ESCAPE '\\' OR tag LIKE ? ESCAPE '\\' OR file_name LIKE ? ESCAPE '\\')"
+            )
+            like_params.extend([esc, esc, esc, esc])
+        if clauses:
+            like_sql += " AND (" + " AND ".join(clauses) + ")"
+        like_sql += " LIMIT ?"
+        like_params.append(max(limit * 3, limit))
+        like_rows = list(conn.execute(like_sql, like_params))
+
+        seen: set[str] = set()
+        for r in list(rows) + like_rows:
+            p = r["path"]
+            if p in seen:
+                continue
+            seen.add(p)
+            cap = r["caption"] or ""
+            kw = r["keywords"] or ""
+            score = 0
+            for t in tokens:
+                if t in cap:
+                    score += 3
+                if t in kw:
+                    score += 2
+                if t == r["tag"]:
+                    score += 4
+                if t in (r["file_name"] or ""):
+                    score += 1
+            results.append(
+                {
+                    "path": p,
+                    "tag": r["tag"],
+                    "caption": cap,
+                    "keywords": kw,
+                    "score": score,
+                }
+            )
+        results.sort(key=lambda x: (-x["score"], x["tag"], x["path"]))
+        return results[:limit]
+
+    # tag-only: random-ish by path order
+    sql = "SELECT path, tag, caption, keywords FROM memes WHERE tag = ? ORDER BY file_name LIMIT ?"
+    rows = conn.execute(sql, (tag, limit)).fetchall()
+    return [
+        {"path": r["path"], "tag": r["tag"], "caption": r["caption"] or "", "keywords": r["keywords"] or "", "score": 0}
+        for r in rows
+    ]
+
+
+def stats(conn: sqlite3.Connection) -> dict:
+    total = conn.execute("SELECT COUNT(*) AS c FROM memes").fetchone()["c"]
+    captioned = conn.execute(
+        "SELECT COUNT(*) AS c FROM memes WHERE caption IS NOT NULL AND caption != ''"
+    ).fetchone()["c"]
+    by_tag = {
+        r["tag"]: r["c"]
+        for r in conn.execute("SELECT tag, COUNT(*) AS c FROM memes GROUP BY tag ORDER BY tag")
+    }
+    return {"total": total, "captioned": captioned, "by_tag": by_tag}

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/cover.png" alt="agent-expression — 表情包 Skill" width="920" />
+  <img src="assets/cover.jpg" alt="agent-expression — 表情包 Skill" width="920" />
 </p>
 
 <h1 align="center">agent-expression</h1>
@@ -100,7 +100,7 @@ SKILL.md          Agent 说明书
 scripts/          CLI（检索 / 索引 / 入库 / 嵌入）
 hermes-tools/     可选原生工具
 references/       Schema & 标签
-assets/cover.png  宣传图
+assets/cover.jpg  宣传图
 ```
 
 ## 常见问题

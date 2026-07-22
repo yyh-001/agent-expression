@@ -43,6 +43,17 @@ curl -fsSL https://raw.githubusercontent.com/yyh-001/agent-expression/main/insta
 irm https://raw.githubusercontent.com/yyh-001/agent-expression/main/install.ps1 | iex
 ```
 
+**Hermes**
+
+因仓库含预置图包（约 80MB），请用安装脚本（会链到 `~/.hermes/skills/media/agent-expression/`），**不要**只 `hermes skills install` 一个 `SKILL.md` URL（拉不全 `packs/`）。
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/yyh-001/agent-expression/main/install.sh | bash -s -- --hermes
+# 或：
+git clone --depth 1 https://github.com/yyh-001/agent-expression.git \
+  ~/.hermes/skills/media/agent-expression
+```
+
 需已安装 [Git for Windows](https://git-scm.com/download/win) 与 Python 3.10+（`python` / `py`）。
 
 默认：**一份内容**装到 `~/.agent-expression/skill/`（Windows：`%USERPROFILE%\.agent-expression\skill\`），并链到主流 Agent / IDE：

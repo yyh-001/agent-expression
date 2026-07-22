@@ -142,6 +142,26 @@ python3 ~/.agent-expression/skill/scripts/search-meme.py "无语" --pick
 #   py -3 %USERPROFILE%\.agent-expression\skill\scripts\search-meme.py "无语" --pick
 ```
 
+### 在 Codex App 中验证
+
+安装 Codex 目标并重新开启一个任务：
+
+```bash
+bash install.sh --codex
+```
+
+在新任务中输入“使用 agent-expression 给我一个无语的表情包”。Skill 会执行：
+
+```bash
+python3 ~/.codex/skills/agent-expression/scripts/search-meme.py \
+  "无语" --pick --host codex
+```
+
+成功输出是一行引用真实本地文件的 Markdown 图片。结构化集成可以改用
+`--json`；返回字段包括 `path`、`mime_type`、`animated`、`tag`、
+`caption`、`retrieval_mode` 和 `exists`。Codex 客户端不渲染本地图片时，
+Skill 会退回文字，不会假装已经发图。
+
 只有你改了图或换了 embedding 模型时，才需要：
 
 ```bash

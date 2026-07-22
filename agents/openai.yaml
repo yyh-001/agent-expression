@@ -1,0 +1,7 @@
+interface:
+  display_name: "Agent Expression"
+  short_description: "从本地表情包库检索并展示真实图片"
+  default_prompt: "Use $agent-expression to find and show a fitting local reaction meme."
+
+policy:
+  allow_implicit_invocation: true

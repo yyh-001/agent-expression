@@ -253,5 +253,6 @@ agent-expression/
 ## License
 
 - 代码与文档 [MIT](./LICENSE)。  
+- 贡献者名单见 [CONTRIBUTORS.md](./CONTRIBUTORS.md)。  
 - 预置图包来自 [astrbot-meme-pack-official-01](https://github.com/anka-afk/astrbot-meme-pack-official-01)，详见 [`packs/official-001/CREDITS.md`](./packs/official-001/CREDITS.md)。
 - 捆绑的 caption / embedding 仅方便开箱检索；更换模型请自行重跑脚本。

@@ -18,6 +18,7 @@ param(
   [switch]$NoLink,
   [switch]$Pack,
   [switch]$Hermes,
+  [switch]$OpenClaw,
   [switch]$Claude,
   [switch]$Codex,
   [switch]$Agents,
@@ -137,6 +138,10 @@ function Get-SingleDest {
   $h = Get-UserHome
   switch ($true) {
     { $Hermes } { return (Join-Path $h ".hermes\skills\media\$SkillName") }
+    { $OpenClaw } {
+      $oc = if ($env:OPENCLAW_HOME) { $env:OPENCLAW_HOME } else { Join-Path $h ".openclaw" }
+      return (Join-Path $oc "skills\$SkillName")
+    }
     { $Claude } { return (Join-Path $h ".claude\skills\$SkillName") }
     { $Codex }  {
       $codexHome = if ($env:CODEX_HOME) { $env:CODEX_HOME } else { Join-Path $h ".codex" }
@@ -149,7 +154,7 @@ function Get-SingleDest {
   }
 }
 
-$single = $Hermes -or $Claude -or $Codex -or $Agents -or $Home -or ($Dir -ne "")
+$single = $Hermes -or $OpenClaw -or $Claude -or $Codex -or $Agents -or $Home -or ($Dir -ne "")
 if (-not $All -and -not $single) { $All = $true }
 
 if ($single) {
@@ -164,20 +169,17 @@ $Linked = @()
 if (-not $NoLink -and $All -and -not $single) {
   $h = Get-UserHome
   $targets = @(
-    (Join-Path $h ".agents\skills\$SkillName"),
-    (Join-Path $h ".claude\skills\$SkillName"),
-    (Join-Path $(if ($env:CODEX_HOME) { $env:CODEX_HOME } else { Join-Path $h ".codex" }) "skills\$SkillName")
+    (Join-Path $h ".hermes\skills\media\$SkillName"),
+    (Join-Path $(if ($env:CODEX_HOME) { $env:CODEX_HOME } else { Join-Path $h ".codex" }) "skills\$SkillName"),
+    (Join-Path $h ".agents\skills\$SkillName")
   )
-  $hermesRoot = Join-Path $h ".hermes"
-  if (Test-Path -LiteralPath $hermesRoot) {
-    $targets += (Join-Path $hermesRoot "skills\media\$SkillName")
+  $openclawRoot = if ($env:OPENCLAW_HOME) { $env:OPENCLAW_HOME } else { Join-Path $h ".openclaw" }
+  if (Test-Path -LiteralPath $openclawRoot) {
+    $targets += (Join-Path $openclawRoot "skills\$SkillName")
   }
   if ($Project) {
     $cwd = (Get-Location).Path
-    $targets += @(
-      (Join-Path $cwd ".agents\skills\$SkillName"),
-      (Join-Path $cwd ".claude\skills\$SkillName")
-    )
+    $targets += (Join-Path $cwd ".agents\skills\$SkillName")
   }
   foreach ($t in $targets) {
     $abs = Resolve-Abs $t
@@ -187,8 +189,7 @@ if (-not $NoLink -and $All -and -not $single) {
 } elseif (-not $NoLink -and $Project) {
   $cwd = (Get-Location).Path
   foreach ($t in @(
-    (Join-Path $cwd ".agents\skills\$SkillName"),
-    (Join-Path $cwd ".claude\skills\$SkillName")
+    (Join-Path $cwd ".agents\skills\$SkillName")
   )) {
     $abs = Resolve-Abs $t
     Link-Into $abs $Canon

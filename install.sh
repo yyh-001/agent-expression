@@ -5,13 +5,13 @@
 #   Windows PowerShell:
 #     irm https://raw.githubusercontent.com/yyh-001/agent-expression/main/install.ps1 | iex
 #
-# Clones once to ~/.agent-expression/skill, then symlinks into mainstream
-# Agent / IDE skill directories (Claude Code, Codex, Agents, Hermes…).
+# Clones once to ~/.agent-expression/skill, then symlinks into
+# Hermes / OpenClaw / Codex paths (and ~/.agents for Codex cross-tool).
 #
 # Flags:
 #   --all                 multi-host links (default)
-#   --project             also link into cwd: .agents/.claude skills
-#   --hermes|--claude|--codex|--agents|--home
+#   --project             also link into cwd: .agents/skills
+#   --hermes|--openclaw|--codex|--agents|--claude|--home
 #                         single target only (no multi-link)
 #   --dir PATH            custom clone/link directory
 #   --no-link             clone only, do not create host links
@@ -31,20 +31,20 @@ SKILL_NAME="agent-expression"
 
 usage() {
   cat <<'EOF'
-Install agent-expression for mainstream Agents / IDEs.
+Install agent-expression — primary targets: Hermes, OpenClaw, Codex.
 
   curl -fsSL https://raw.githubusercontent.com/yyh-001/agent-expression/main/install.sh | bash
 
 Default: clone → ~/.agent-expression/skill, symlink into:
-  ~/.agents/skills/agent-expression     (Codex / cross-tool)
-  ~/.claude/skills/agent-expression     (Claude Code)
-  ~/.codex/skills/agent-expression      (Codex legacy)
-  ~/.hermes/skills/media/agent-expression  (if ~/.hermes exists)
+  ~/.hermes/skills/media/agent-expression   (Hermes)
+  ~/.openclaw/skills/agent-expression       (OpenClaw, if ~/.openclaw exists)
+  ~/.codex/skills/agent-expression          (Codex)
+  ~/.agents/skills/agent-expression         (Codex cross-tool)
 
 Options:
   --all                 multi-host (default)
-  --project             also link into current repo (.agents / .claude)
-  --hermes|--claude|--codex|--agents|--home
+  --project             also link into current repo (.agents/skills)
+  --hermes|--openclaw|--codex|--agents|--claude|--home
   --dir PATH            custom destination
   --no-link             clone only
   --pack                mkdir meme pack tree
@@ -60,6 +60,7 @@ while [[ $# -gt 0 ]]; do
     --no-link) NO_LINK=1 ;;
     --pack) WANT_PACK=1 ;;
     --hermes) MODE=single; INSTALL_TARGET=hermes ;;
+    --openclaw) MODE=single; INSTALL_TARGET=openclaw ;;
     --claude) MODE=single; INSTALL_TARGET=claude ;;
     --codex) MODE=single; INSTALL_TARGET=codex ;;
     --agents) MODE=single; INSTALL_TARGET=agents ;;
@@ -92,6 +93,7 @@ abs_path() {
 single_dest() {
   case "$INSTALL_TARGET" in
     hermes) echo "${HERMES_HOME:-$HOME/.hermes}/skills/media/${SKILL_NAME}" ;;
+    openclaw) echo "${OPENCLAW_HOME:-$HOME/.openclaw}/skills/${SKILL_NAME}" ;;
     claude) echo "${HOME}/.claude/skills/${SKILL_NAME}" ;;
     codex)  echo "${CODEX_HOME:-$HOME/.codex}/skills/${SKILL_NAME}" ;;
     agents) echo "${HOME}/.agents/skills/${SKILL_NAME}" ;;
@@ -163,16 +165,15 @@ link_into() {
 }
 
 collect_host_links() {
-  # stdout: one path per line
-  echo "${HOME}/.agents/skills/${SKILL_NAME}"
-  echo "${HOME}/.claude/skills/${SKILL_NAME}"
+  # stdout: one path per line — Hermes / OpenClaw / Codex first
+  echo "${HERMES_HOME:-$HOME/.hermes}/skills/media/${SKILL_NAME}"
   echo "${CODEX_HOME:-$HOME/.codex}/skills/${SKILL_NAME}"
-  if [[ -d "${HERMES_HOME:-$HOME/.hermes}" ]]; then
-    echo "${HERMES_HOME:-$HOME/.hermes}/skills/media/${SKILL_NAME}"
+  echo "${HOME}/.agents/skills/${SKILL_NAME}"
+  if [[ -d "${OPENCLAW_HOME:-$HOME/.openclaw}" ]]; then
+    echo "${OPENCLAW_HOME:-$HOME/.openclaw}/skills/${SKILL_NAME}"
   fi
   if [[ "$WANT_PROJECT" -eq 1 ]]; then
     echo "$(pwd)/.agents/skills/${SKILL_NAME}"
-    echo "$(pwd)/.claude/skills/${SKILL_NAME}"
   fi
 }
 

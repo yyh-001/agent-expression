@@ -2,8 +2,8 @@
 name: agent-expression
 slug: agent-expression
 displayName: Agent Expression
-description: "本地表情包 Skill：按心情语义/关键词搜图、识图入库，只返回真实绝对路径（禁止瞎编路径或乱抽）。Hermes 用 MEDIA:/path；Codex 用 --host codex。"
-version: 2.3.1
+description: "本地表情包 Skill（Hermes / OpenClaw / Codex）：语义搜图、识图入库，只返回真实绝对路径。Hermes 用 MEDIA:；Codex 用 --host codex；OpenClaw 用 send_image。"
+version: 2.3.2
 author: yyh-001
 license: MIT
 platforms: [linux, macos, windows]
@@ -14,7 +14,7 @@ metadata:
 
 # Agent Expression
 
-通用本地表情包 Skill：索引 → 检索 → 真实绝对路径发出。不绑定某一 Agent 运行时。
+通用本地表情包 Skill：索引 → 检索 → 真实绝对路径发出。**主打 Hermes、OpenClaw、Codex。**
 
 ## 给模型的硬规则
 
@@ -24,14 +24,14 @@ metadata:
 4. 失败 → 只回文字。
 5. 输出：**绝对路径**；再按宿主投递（见下）。**不要**默认输出 `MEDIA:`（仅 Hermes 等网关需要）。
 
-### 按宿主投递
+### 按宿主投递（Hermes · OpenClaw · Codex）
 
 | 宿主 | 做法 |
 |------|------|
 | **Hermes** | `python3 scripts/search-meme.py "<query>" --pick --host hermes` → 正文 + 单独一行 `MEDIA:/abs/path` |
-| **Codex** | `python3 scripts/search-meme.py "<query>" --pick --host codex` → stdout 一行 Markdown 图片（真实本地路径）；客户端不渲染时只回文字 |
-| **自建 bot** | `send_image(path)` 或平台等价 API |
-| **其它** | 有附件则附文件，否则回路径 / 纯文字 |
+| **OpenClaw** | `search-meme.py … --pick` → `send_image(path)`；商店装后需 Git/`install.sh` 拉图包 |
+| **Codex** | `python3 scripts/search-meme.py "<query>" --pick --host codex` → stdout 一行 Markdown 图片；不渲染时只回文字 |
+| **其它** | `--pick` 得绝对路径 → 平台附件 API 或纯文字 |
 
 投递格式全文见 [references/hosts.md](references/hosts.md)。
 
@@ -109,12 +109,11 @@ MEDIA:/absolute/path/to/meme.png
 
 ## 宿主适配
 
-一行安装默认多宿主链接（Claude Code / Codex / Agents / Hermes）。
+默认安装链到 **Hermes / OpenClaw / Codex** 路径（见 `install.sh --hermes|--openclaw|--codex`）。
 
-- 路径与发图约定（含 **Windows**）：[references/hosts.md](references/hosts.md)
+- 发图约定：[references/hosts.md](references/hosts.md)
 - Windows：`install.ps1`；macOS/Linux：`install.sh`
 - Hermes 可选原生工具：[hermes-tools/](hermes-tools/)
-- 契约：脚本返回真实绝对路径；`MEDIA:` 仅部分网关需要。临时目录用系统 TEMP（跨平台）。
 
 ## License
 

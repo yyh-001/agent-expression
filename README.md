@@ -25,7 +25,7 @@
 - 发完就忘，下次搜不到  
 
 **agent-expression** 是一套本地表情包管线：索引 → 检索 → 只返回真实绝对路径。  
-不绑定 Hermes / 某一框架——只要能跑 shell、能发本地图，就能接。
+**主打 [Hermes](https://github.com/NousResearch/hermes-agent) · [OpenClaw](https://docs.openclaw.ai/tools/skills)（龙虾）· Codex**；其它能跑 shell 的 Agent 也能接。
 
 本仓库是 **Skill + CLI + 精简预置图包**（`packs/official-001/`，约 **2.5MB / 52 张**，含 caption 与 embedding，开箱可搜）。完整上游包可自行扩容；图片版权见包内 `CREDITS.md`。
 
@@ -35,7 +35,63 @@
 
 ---
 
-## 一行安装
+## 推荐平台：Hermes · OpenClaw · Codex
+
+| 平台 | 安装 | 发图 |
+|------|------|------|
+| **Hermes** | `curl …/install.sh \| bash -s -- --hermes` | `--host hermes` → `MEDIA:/abs/path`；可选 [`hermes-tools/`](./hermes-tools/) |
+| **OpenClaw** | `openclaw skills install @yyh-001/agent-expression` + 图包见下 | `search-meme.py --pick` → `send_image(path)` |
+| **Codex** | `curl …/install.sh \| bash -s -- --codex` | `--host codex` → Markdown 本地图；`--json` 结构化 |
+
+OpenClaw / ClawHub / SkillHub 商店包**不含**完整图包；要开箱可搜请再跑 `install.sh` 或 `openclaw skills install git:yyh-001/agent-expression@main`。
+
+### Hermes
+
+因含预置图包，请用安装脚本链到 `~/.hermes/skills/media/agent-expression/`，**不要**只 `hermes skills install` 一个 `SKILL.md` URL。
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/yyh-001/agent-expression/main/install.sh | bash -s -- --hermes
+```
+
+发图示例：
+
+```text
+行吧你赢了
+MEDIA:/abs/path/to/meme.jpg
+```
+
+### OpenClaw（龙虾）
+
+装完**新开一轮会话**才会加载 Skill。
+
+```bash
+openclaw skills install @yyh-001/agent-expression
+openclaw skills install @yyh-001/agent-expression --global   # 本机共用
+
+# 要预置图包（约 2.5MB）：
+openclaw skills install git:yyh-001/agent-expression@main
+# 或：
+curl -fsSL https://raw.githubusercontent.com/yyh-001/agent-expression/main/install.sh | bash
+```
+
+### Codex
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/yyh-001/agent-expression/main/install.sh | bash -s -- --codex
+```
+
+在新任务里让 Skill 执行：
+
+```bash
+python3 ~/.codex/skills/agent-expression/scripts/search-meme.py \
+  "无语" --pick --host codex
+```
+
+成功时 stdout 为一行 `![alt](</abs/path>)`；机器可读用 `--json`。客户端不渲染本地图时只回文字。
+
+---
+
+## 一行安装（通用）
 
 **macOS / Linux**
 
@@ -51,130 +107,56 @@ irm https://raw.githubusercontent.com/yyh-001/agent-expression/main/install.ps1 
 
 需已安装 [Git for Windows](https://git-scm.com/download/win) 与 Python 3.10+（`python` / `py`）。
 
-### OpenClaw（龙虾）
+默认 clone 到 `~/.agent-expression/skill/`，并链到上述三大平台路径（若目录已存在则一并链接 OpenClaw）：
 
-[OpenClaw](https://docs.openclaw.ai/tools/skills) 推荐用内置 skills 命令或 [ClawHub](https://clawhub.ai) CLI。装完后**新开一轮会话**才会加载 Skill。
+| 路径 | 平台 |
+|------|------|
+| `~/.hermes/skills/media/agent-expression` | Hermes |
+| `~/.openclaw/skills/agent-expression` | OpenClaw（若已装） |
+| `~/.codex/skills/agent-expression` | Codex |
+| `~/.agents/skills/agent-expression` | Codex 跨工具标准 |
 
 ```bash
-# ① 推荐：OpenClaw 从 ClawHub 安装
-openclaw skills install @yyh-001/agent-expression
-# 装到本机共用目录（多 agent 可见）：
-openclaw skills install @yyh-001/agent-expression --global
-
-# ② 等价：ClawHub CLI
-npm i -g clawhub          # 若尚未安装
-clawhub search agent-expression
-clawhub install agent-expression
-
-# ③ 要预置图包（约 2.5MB）时：从 Git 装整仓，或再跑一行安装脚本
-openclaw skills install git:yyh-001/agent-expression@main
-# 或：
-curl -fsSL https://raw.githubusercontent.com/yyh-001/agent-expression/main/install.sh | bash
+curl -fsSL …/install.sh | bash -s -- --hermes    # 仅 Hermes
+curl -fsSL …/install.sh | bash -s -- --codex     # 仅 Codex
+curl -fsSL …/install.sh | bash -s -- --openclaw  # 仅 OpenClaw
 ```
 
-### 腾讯 SkillHub（国内）
+完整约定：[references/hosts.md](./references/hosts.md)
 
-国内商店：[skillhub.cn](https://www.skillhub.cn/)，可搜 `agent-expression`。
+### 国内分发（SkillHub / ClawHub）
+
+| 来源 | 有什么 | 图包 |
+|------|--------|------|
+| **GitHub / `install.sh`** | Skill + 脚本 + 精简 `packs/`（约 2.5MB） | 已含 |
+| **ClawHub / OpenClaw `@yyh-001/…`** | Skill + 脚本 | 再跑 `install.sh` 或 Git 装整仓 |
+| **腾讯 SkillHub** | Skill + 脚本 | 同上 |
 
 ```bash
-# 安装 CLI（仅 CLI）
+# SkillHub
 curl -fsSL https://skillhub.cn/install/install.sh | bash -s -- --cli-only
+skillhub install agent-expression --dir ~/.openclaw/skills   # 或 ~/.hermes/skills 等
 
-skillhub search agent-expression
-skillhub install agent-expression --dir ~/.agents/skills   # 目录按你的 Agent 改
-# OpenClaw 示例：
-# skillhub install agent-expression --dir ~/.openclaw/skills
+# ClawHub
+clawhub install agent-expression
 ```
-
-### 商店包 vs 完整图包
-
-| 来源 | 有什么 | 搜图前还要做什么 |
-|------|--------|------------------|
-| **GitHub / `install.sh`** | Skill + 脚本 + 精简 `packs/`（约 2.5MB） | 一般可直接搜 |
-| **ClawHub / OpenClaw `@yyh-001/…`** | Skill + 脚本 | 再跑 `install.sh`，或 `git:yyh-001/agent-expression@main` |
-| **腾讯 SkillHub** | Skill + 脚本（平台不允许上传图片） | 同上，用 GitHub 拉图包 |
 
 网页：[clawhub.ai](https://clawhub.ai) / [skillhub.cn](https://www.skillhub.cn/) 搜 `agent-expression`。
 
-### Hermes
-
-因仓库含预置图包，请用安装脚本（会链到 `~/.hermes/skills/media/agent-expression/`），**不要**只 `hermes skills install` 一个 `SKILL.md` URL（拉不全 `packs/`）。
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/yyh-001/agent-expression/main/install.sh | bash -s -- --hermes
-# 或：
-git clone --depth 1 https://github.com/yyh-001/agent-expression.git \
-  ~/.hermes/skills/media/agent-expression
-```
-
-默认：**一份内容**装到 `~/.agent-expression/skill/`（Windows：`%USERPROFILE%\.agent-expression\skill\`），并链到主流 Agent / IDE：
-
-| 路径 | 覆盖 |
-|------|------|
-| `~/.agents/skills/agent-expression` | 跨工具（Codex 等） |
-| `~/.claude/skills/agent-expression` | Claude Code |
-| `~/.codex/skills/agent-expression` | Codex 兼容路径 |
-| `~/.hermes/skills/media/agent-expression` | 若已装 Hermes |
-
-```bash
-# macOS/Linux：当前仓库 / 单宿主
-curl -fsSL …/install.sh | bash -s -- --project
-curl -fsSL …/install.sh | bash -s -- --codex
-```
-
-```powershell
-# Windows
-irm …/install.ps1 -OutFile $env:TEMP\ae-install.ps1
-powershell -ExecutionPolicy Bypass -File $env:TEMP\ae-install.ps1 -Project
-powershell -ExecutionPolicy Bypass -File $env:TEMP\ae-install.ps1 -Codex
-```
-
-完整宿主说明（含 Windows）：[references/hosts.md](./references/hosts.md)
-
-## 装完三步
+## 装完即用
 
 ```bash
 # 安装脚本会把 packs/official-001（图 + index.db + 向量）拷到本地 meme-packs/
-# 可直接搜，不必再识图 / 向量化：
 python3 ~/.agent-expression/skill/scripts/search-meme.py "无语" --pick
-# Windows：
-#   py -3 %USERPROFILE%\.agent-expression\skill\scripts\search-meme.py "无语" --pick
+# Hermes：加 --host hermes
+# Codex：  加 --host codex
 ```
-
-### 在 Codex App 中验证
-
-安装 Codex 目标并重新开启一个任务：
-
-```bash
-bash install.sh --codex
-```
-
-在新任务中输入「使用 agent-expression 给我一个无语的表情包」。Skill 会执行：
-
-```bash
-python3 ~/.codex/skills/agent-expression/scripts/search-meme.py \
-  "无语" --pick --host codex
-```
-
-成功输出是一行引用真实本地文件的 Markdown 图片。结构化集成可以改用
-`--json`；返回字段包括 `path`、`mime_type`、`animated`、`tag`、
-`caption`、`retrieval_mode` 和 `exists`。Codex 客户端不渲染本地图片时，
-Skill 会退回文字，不会假装已经发图。
 
 只有你改了图或换了 embedding 模型时，才需要：
 
 ```bash
-python3 …/scripts/index-memes.py --sync-only   # 或 --workers 做 caption
+python3 …/scripts/index-memes.py --sync-only
 python3 …/scripts/embed-memes.py
-```
-
-Agent 拿到路径后交给宿主：
-
-- **Hermes** 等网关：
-
-```text
-行吧你赢了
-MEDIA:/abs/path/to/meme.jpg
 ```
 
 详见 [references/hosts.md](./references/hosts.md)
@@ -223,17 +205,13 @@ python3 scripts/add-meme.py happy ./x.gif           # 指定标签入库
 
 ## 接到你的 Agent
 
-一行安装后，Claude Code / Codex / Hermes 等会自动发现同名 Skill。发图方式见 [hosts](./references/hosts.md)。
-
-| 你在用 | 怎么接 |
-|--------|--------|
-| **OpenClaw（龙虾）** | `openclaw skills install @yyh-001/agent-expression`；要图包再 Git/`install.sh` → `send_image(path)` |
-| **腾讯 SkillHub** | `skillhub install agent-expression --dir <skills目录>`；图包另用 GitHub/`install.sh` |
-| Claude / Codex | 附件或回路径；Codex 可用 `--host codex` |
-| [Hermes](https://github.com/NousResearch/hermes-agent) | 同上；可选 [`hermes-tools/`](./hermes-tools/) 原生工具 |
-| 任意能跑 shell 的 Agent | 执行 `scripts/`，发返回的绝对路径 |
-| 自建 bot | `subprocess(search-meme.py --pick)` → `send_image(path)` |
-| 损友人设（可选） | 另装 [suki](https://github.com/yyh-001/suki)；不要把图包塞进人设仓 |
+| 平台 | 要点 |
+|------|------|
+| **[Hermes](https://github.com/NousResearch/hermes-agent)** | `install.sh --hermes`；`--host hermes` 或 `hermes-tools/` |
+| **OpenClaw** | `@yyh-001/agent-expression`；图包用 Git / `install.sh` |
+| **Codex** | `install.sh --codex`；`--host codex` / `--json` |
+| 损友人设（可选） | 另装 [suki](https://github.com/yyh-001/suki) |
+| 其它 / 自建 bot | `search-meme.py --pick` → 平台 `send_image` API |
 
 ```text
 agent-expression/

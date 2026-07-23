@@ -25,7 +25,7 @@
 - 发完就忘，下次搜不到  
 
 **agent-expression** 是一套本地表情包管线：索引 → 检索 → 只返回真实绝对路径。  
-不绑定 Hermes / Cursor / 某一框架——只要能跑 shell、能发本地图，就能接。
+不绑定 Hermes / 某一框架——只要能跑 shell、能发本地图，就能接。
 
 本仓库是 **Skill + CLI + 精简预置图包**（`packs/official-001/`，约 **2.5MB / 52 张**，含 caption 与 embedding，开箱可搜）。完整上游包可自行扩容；图片版权见包内 `CREDITS.md`。
 
@@ -111,8 +111,7 @@ git clone --depth 1 https://github.com/yyh-001/agent-expression.git \
 
 | 路径 | 覆盖 |
 |------|------|
-| `~/.agents/skills/agent-expression` | 跨工具（Codex / Cursor 等） |
-| `~/.cursor/skills/agent-expression` | Cursor |
+| `~/.agents/skills/agent-expression` | 跨工具（Codex 等） |
 | `~/.claude/skills/agent-expression` | Claude Code |
 | `~/.codex/skills/agent-expression` | Codex 兼容路径 |
 | `~/.hermes/skills/media/agent-expression` | 若已装 Hermes |
@@ -120,14 +119,14 @@ git clone --depth 1 https://github.com/yyh-001/agent-expression.git \
 ```bash
 # macOS/Linux：当前仓库 / 单宿主
 curl -fsSL …/install.sh | bash -s -- --project
-curl -fsSL …/install.sh | bash -s -- --cursor
+curl -fsSL …/install.sh | bash -s -- --codex
 ```
 
 ```powershell
 # Windows
 irm …/install.ps1 -OutFile $env:TEMP\ae-install.ps1
 powershell -ExecutionPolicy Bypass -File $env:TEMP\ae-install.ps1 -Project
-powershell -ExecutionPolicy Bypass -File $env:TEMP\ae-install.ps1 -Cursor
+powershell -ExecutionPolicy Bypass -File $env:TEMP\ae-install.ps1 -Codex
 ```
 
 完整宿主说明（含 Windows）：[references/hosts.md](./references/hosts.md)
@@ -171,7 +170,6 @@ python3 …/scripts/embed-memes.py
 
 Agent 拿到路径后交给宿主：
 
-- **Cursor**：`open_resource(file:///绝对路径)` 在编辑器预览（不要 `MEDIA:`）
 - **Hermes** 等网关：
 
 ```text
@@ -225,14 +223,13 @@ python3 scripts/add-meme.py happy ./x.gif           # 指定标签入库
 
 ## 接到你的 Agent
 
-一行安装后，Cursor / Claude Code / Codex / Hermes 等会自动发现同名 Skill。发图方式见 [hosts](./references/hosts.md)。
+一行安装后，Claude Code / Codex / Hermes 等会自动发现同名 Skill。发图方式见 [hosts](./references/hosts.md)。
 
 | 你在用 | 怎么接 |
 |--------|--------|
 | **OpenClaw（龙虾）** | `openclaw skills install @yyh-001/agent-expression`；要图包再 Git/`install.sh` → `send_image(path)` |
 | **腾讯 SkillHub** | `skillhub install agent-expression --dir <skills目录>`；图包另用 GitHub/`install.sh` |
-| Cursor | 用户级 skill 已链好；搜到图后 `open_resource(file:///…)` 预览，见 [hosts](./references/hosts.md) |
-| Claude / Codex | 附件或回路径；对话里可提「发个表情包」 |
+| Claude / Codex | 附件或回路径；Codex 可用 `--host codex` |
 | [Hermes](https://github.com/NousResearch/hermes-agent) | 同上；可选 [`hermes-tools/`](./hermes-tools/) 原生工具 |
 | 任意能跑 shell 的 Agent | 执行 `scripts/`，发返回的绝对路径 |
 | 自建 bot | `subprocess(search-meme.py --pick)` → `send_image(path)` |

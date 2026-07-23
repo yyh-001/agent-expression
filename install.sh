@@ -6,12 +6,12 @@
 #     irm https://raw.githubusercontent.com/yyh-001/agent-expression/main/install.ps1 | iex
 #
 # Clones once to ~/.agent-expression/skill, then symlinks into mainstream
-# Agent / IDE skill directories (Cursor, Claude Code, Codex, Agents, Hermes…).
+# Agent / IDE skill directories (Claude Code, Codex, Agents, Hermes…).
 #
 # Flags:
 #   --all                 multi-host links (default)
-#   --project             also link into cwd: .agents/.cursor/.claude skills
-#   --hermes|--cursor|--claude|--codex|--agents|--home
+#   --project             also link into cwd: .agents/.claude skills
+#   --hermes|--claude|--codex|--agents|--home
 #                         single target only (no multi-link)
 #   --dir PATH            custom clone/link directory
 #   --no-link             clone only, do not create host links
@@ -36,16 +36,15 @@ Install agent-expression for mainstream Agents / IDEs.
   curl -fsSL https://raw.githubusercontent.com/yyh-001/agent-expression/main/install.sh | bash
 
 Default: clone → ~/.agent-expression/skill, symlink into:
-  ~/.agents/skills/agent-expression     (Codex / Cursor / cross-tool)
-  ~/.cursor/skills/agent-expression     (Cursor IDE)
+  ~/.agents/skills/agent-expression     (Codex / cross-tool)
   ~/.claude/skills/agent-expression     (Claude Code)
   ~/.codex/skills/agent-expression      (Codex legacy)
   ~/.hermes/skills/media/agent-expression  (if ~/.hermes exists)
 
 Options:
   --all                 multi-host (default)
-  --project             also link into current repo (.agents / .cursor / .claude)
-  --hermes|--cursor|--claude|--codex|--agents|--home
+  --project             also link into current repo (.agents / .claude)
+  --hermes|--claude|--codex|--agents|--home
   --dir PATH            custom destination
   --no-link             clone only
   --pack                mkdir meme pack tree
@@ -61,7 +60,6 @@ while [[ $# -gt 0 ]]; do
     --no-link) NO_LINK=1 ;;
     --pack) WANT_PACK=1 ;;
     --hermes) MODE=single; INSTALL_TARGET=hermes ;;
-    --cursor) MODE=single; INSTALL_TARGET=cursor ;;
     --claude) MODE=single; INSTALL_TARGET=claude ;;
     --codex) MODE=single; INSTALL_TARGET=codex ;;
     --agents) MODE=single; INSTALL_TARGET=agents ;;
@@ -94,7 +92,6 @@ abs_path() {
 single_dest() {
   case "$INSTALL_TARGET" in
     hermes) echo "${HERMES_HOME:-$HOME/.hermes}/skills/media/${SKILL_NAME}" ;;
-    cursor) echo "${HOME}/.cursor/skills/${SKILL_NAME}" ;;
     claude) echo "${HOME}/.claude/skills/${SKILL_NAME}" ;;
     codex)  echo "${CODEX_HOME:-$HOME/.codex}/skills/${SKILL_NAME}" ;;
     agents) echo "${HOME}/.agents/skills/${SKILL_NAME}" ;;
@@ -168,7 +165,6 @@ link_into() {
 collect_host_links() {
   # stdout: one path per line
   echo "${HOME}/.agents/skills/${SKILL_NAME}"
-  echo "${HOME}/.cursor/skills/${SKILL_NAME}"
   echo "${HOME}/.claude/skills/${SKILL_NAME}"
   echo "${CODEX_HOME:-$HOME/.codex}/skills/${SKILL_NAME}"
   if [[ -d "${HERMES_HOME:-$HOME/.hermes}" ]]; then
@@ -176,7 +172,6 @@ collect_host_links() {
   fi
   if [[ "$WANT_PROJECT" -eq 1 ]]; then
     echo "$(pwd)/.agents/skills/${SKILL_NAME}"
-    echo "$(pwd)/.cursor/skills/${SKILL_NAME}"
     echo "$(pwd)/.claude/skills/${SKILL_NAME}"
   fi
 }

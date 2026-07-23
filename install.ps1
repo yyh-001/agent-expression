@@ -9,7 +9,6 @@
 
 .EXAMPLE
   .\install.ps1 -Project
-  .\install.ps1 -Cursor
   .\install.ps1 -Dir "D:\skills\agent-expression"
 #>
 [CmdletBinding()]
@@ -19,7 +18,6 @@ param(
   [switch]$NoLink,
   [switch]$Pack,
   [switch]$Hermes,
-  [switch]$Cursor,
   [switch]$Claude,
   [switch]$Codex,
   [switch]$Agents,
@@ -139,7 +137,6 @@ function Get-SingleDest {
   $h = Get-UserHome
   switch ($true) {
     { $Hermes } { return (Join-Path $h ".hermes\skills\media\$SkillName") }
-    { $Cursor } { return (Join-Path $h ".cursor\skills\$SkillName") }
     { $Claude } { return (Join-Path $h ".claude\skills\$SkillName") }
     { $Codex }  {
       $codexHome = if ($env:CODEX_HOME) { $env:CODEX_HOME } else { Join-Path $h ".codex" }
@@ -152,7 +149,7 @@ function Get-SingleDest {
   }
 }
 
-$single = $Hermes -or $Cursor -or $Claude -or $Codex -or $Agents -or $Home -or ($Dir -ne "")
+$single = $Hermes -or $Claude -or $Codex -or $Agents -or $Home -or ($Dir -ne "")
 if (-not $All -and -not $single) { $All = $true }
 
 if ($single) {
@@ -168,7 +165,6 @@ if (-not $NoLink -and $All -and -not $single) {
   $h = Get-UserHome
   $targets = @(
     (Join-Path $h ".agents\skills\$SkillName"),
-    (Join-Path $h ".cursor\skills\$SkillName"),
     (Join-Path $h ".claude\skills\$SkillName"),
     (Join-Path $(if ($env:CODEX_HOME) { $env:CODEX_HOME } else { Join-Path $h ".codex" }) "skills\$SkillName")
   )
@@ -180,7 +176,6 @@ if (-not $NoLink -and $All -and -not $single) {
     $cwd = (Get-Location).Path
     $targets += @(
       (Join-Path $cwd ".agents\skills\$SkillName"),
-      (Join-Path $cwd ".cursor\skills\$SkillName"),
       (Join-Path $cwd ".claude\skills\$SkillName")
     )
   }
@@ -193,7 +188,6 @@ if (-not $NoLink -and $All -and -not $single) {
   $cwd = (Get-Location).Path
   foreach ($t in @(
     (Join-Path $cwd ".agents\skills\$SkillName"),
-    (Join-Path $cwd ".cursor\skills\$SkillName"),
     (Join-Path $cwd ".claude\skills\$SkillName")
   )) {
     $abs = Resolve-Abs $t

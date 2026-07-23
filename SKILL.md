@@ -2,8 +2,8 @@
 name: agent-expression
 slug: agent-expression
 displayName: Agent Expression
-description: "本地表情包 Skill：按心情语义/关键词搜图、识图入库，只返回真实绝对路径（禁止瞎编路径或乱抽）。Cursor 用 open_resource 预览；Hermes 用 MEDIA:/path。"
-version: 2.3.0
+description: "本地表情包 Skill：按心情语义/关键词搜图、识图入库，只返回真实绝对路径（禁止瞎编路径或乱抽）。Hermes 用 MEDIA:/path；Codex 用 --host codex。"
+version: 2.3.1
 author: yyh-001
 license: MIT
 platforms: [linux, macos, windows]
@@ -28,7 +28,6 @@ metadata:
 
 | 宿主 | 做法 |
 |------|------|
-| **Cursor** | 拿到绝对路径后，用 MCP `open_resource` 打开 `file:///<绝对路径>` 预览；**不要**用 `MEDIA:`；**不要**只丢路径指望聊天气泡出图。若路径不在工作区 / `~/.cursor` 被拒，先拷到工作区 `.meme-preview/` 再打开。详见 [references/hosts.md](references/hosts.md)。 |
 | **Hermes** | `python3 scripts/search-meme.py "<query>" --pick --host hermes` → 正文 + 单独一行 `MEDIA:/abs/path` |
 | **Codex** | `python3 scripts/search-meme.py "<query>" --pick --host codex` → stdout 一行 Markdown 图片（真实本地路径）；客户端不渲染时只回文字 |
 | **自建 bot** | `send_image(path)` 或平台等价 API |
@@ -110,7 +109,7 @@ MEDIA:/absolute/path/to/meme.png
 
 ## 宿主适配
 
-一行安装默认多宿主链接（Cursor / Claude Code / Codex / Agents / Hermes）。
+一行安装默认多宿主链接（Claude Code / Codex / Agents / Hermes）。
 
 - 路径与发图约定（含 **Windows**）：[references/hosts.md](references/hosts.md)
 - Windows：`install.ps1`；macOS/Linux：`install.sh`

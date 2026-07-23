@@ -65,6 +65,8 @@ open_resource(uri)
 ### Claude Code / Codex / 其它 coding Agent
 
 - 读 `SKILL.md`，执行 `scripts/search-meme.py … --pick`
+- **Codex**：优先 `--host codex`，stdout 为一行 `![alt](</abs/path>)`；机器可读用 `--json`
+- **Hermes 网关**：`--host hermes` 直接输出 `MEDIA:/abs/path`
 - 有附件能力则附上本地文件；否则回路径或只回文字
 - 无 `open_resource` 时不要假装已预览
 

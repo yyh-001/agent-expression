@@ -3,7 +3,7 @@ name: agent-expression
 slug: agent-expression
 displayName: Agent Expression
 description: "本地表情包 Skill：按心情语义/关键词搜图、识图入库，只返回真实绝对路径（禁止瞎编路径或乱抽）。Cursor 用 open_resource 预览；Hermes 用 MEDIA:/path。"
-version: 2.2.1
+version: 2.3.0
 author: yyh-001
 license: MIT
 platforms: [linux, macos, windows]
@@ -29,7 +29,8 @@ metadata:
 | 宿主 | 做法 |
 |------|------|
 | **Cursor** | 拿到绝对路径后，用 MCP `open_resource` 打开 `file:///<绝对路径>` 预览；**不要**用 `MEDIA:`；**不要**只丢路径指望聊天气泡出图。若路径不在工作区 / `~/.cursor` 被拒，先拷到工作区 `.meme-preview/` 再打开。详见 [references/hosts.md](references/hosts.md)。 |
-| **Hermes** | 正文 + 单独一行 `MEDIA:/abs/path` |
+| **Hermes** | `python3 scripts/search-meme.py "<query>" --pick --host hermes` → 正文 + 单独一行 `MEDIA:/abs/path` |
+| **Codex** | `python3 scripts/search-meme.py "<query>" --pick --host codex` → stdout 一行 Markdown 图片（真实本地路径）；客户端不渲染时只回文字 |
 | **自建 bot** | `send_image(path)` 或平台等价 API |
 | **其它** | 有附件则附文件，否则回路径 / 纯文字 |
 
@@ -65,8 +66,11 @@ python3 scripts/index-memes.py --sync-only
 python3 scripts/index-memes.py --workers 2
 python3 scripts/embed-memes.py
 
-# 检索：stdout 一行绝对路径
+# 检索：stdout 一行绝对路径（或按宿主格式化）
 python3 scripts/search-meme.py "无语 摸鱼" --pick
+python3 scripts/search-meme.py "无语" --pick --host codex   # Codex Markdown 图片
+python3 scripts/search-meme.py "无语" --pick --host hermes  # MEDIA: 行
+python3 scripts/search-meme.py "无语" --pick --json         # 结构化 JSON
 python3 scripts/pick-meme.py shy
 
 # 入库

@@ -12,6 +12,7 @@ import json
 import logging
 import os
 import random
+import sys
 from pathlib import Path
 from typing import Any, Optional
 
@@ -59,9 +60,14 @@ def _load_meme_db():
     db_py = scripts / "meme_db.py"
     if not db_py.is_file():
         raise FileNotFoundError(f"meme_db.py not found: {db_py}")
+    # Register in sys.modules so meme_embed path resolution can find us.
+    cached = sys.modules.get("hermes_meme_db")
+    if cached is not None and getattr(cached, "__file__", None) == str(db_py):
+        return cached
     spec = importlib.util.spec_from_file_location("hermes_meme_db", db_py)
     mod = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
+    sys.modules["hermes_meme_db"] = mod
     spec.loader.exec_module(mod)
     return mod
 
@@ -71,9 +77,13 @@ def _load_meme_embed():
     py = scripts / "meme_embed.py"
     if not py.is_file():
         return None
+    cached = sys.modules.get("hermes_meme_embed")
+    if cached is not None and getattr(cached, "__file__", None) == str(py):
+        return cached
     spec = importlib.util.spec_from_file_location("hermes_meme_embed", py)
     mod = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
+    sys.modules["hermes_meme_embed"] = mod
     spec.loader.exec_module(mod)
     return mod
 

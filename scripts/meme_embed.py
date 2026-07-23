@@ -259,16 +259,40 @@ def load_matrix(
     return metas, np.vstack(mats).astype(np.float32)
 
 
-def _resolve_result_path(conn: sqlite3.Connection, stored: str) -> str:
+def _load_sibling_meme_db():
+    """Load scripts/meme_db.py even when hermes importlib-loads us off sys.modules."""
+    import importlib.util
     import sys
 
+    here = Path(__file__).resolve().parent / "meme_db.py"
     for mod in list(sys.modules.values()):
         fn = getattr(mod, "__file__", "") or ""
-        if fn.endswith("meme_db.py") and hasattr(mod, "pack_dir_of") and hasattr(mod, "from_store_path"):
-            pack = mod.pack_dir_of(conn)
-            if pack is not None:
-                return str(mod.from_store_path(pack, stored))
-    return stored
+        if fn and Path(fn).resolve() == here and hasattr(mod, "from_store_path"):
+            return mod
+    spec = importlib.util.spec_from_file_location("_ae_meme_db_resolve", here)
+    if not spec or not spec.loader:
+        return None
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _resolve_result_path(conn: sqlite3.Connection, stored: str) -> str:
+    """Turn pack-relative DB paths into absolute filesystem paths.
+
+    Index rows are stored relative (``memes/<tag>/<file>``) for portability.
+    Vector search must absolutize like FTS does; otherwise callers see a
+    relative path that fails ``Path(...).is_file()`` from another cwd.
+    """
+    mod = _load_sibling_meme_db()
+    if mod is None:
+        return stored
+    pack = mod.pack_dir_of(conn)
+    if pack is None:
+        # Conn was opened without meme_db.connect tracking — fall back to default pack.
+        pack = mod.default_pack_dir()
+    return str(mod.from_store_path(pack, stored))
 
 
 def search_vector(

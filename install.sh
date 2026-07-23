@@ -116,14 +116,22 @@ clone_or_update() {
   if command -v git >/dev/null 2>&1; then
     if [[ -d "$dest/.git" ]]; then
       echo "==> Existing git install, updating…"
+      if [[ -n "$(git -C "$dest" status --porcelain)" ]]; then
+        echo "ERROR: refusing to overwrite local changes in $dest" >&2
+        echo "Commit, stash, or move those changes, then run the installer again." >&2
+        exit 1
+      fi
       git -C "$dest" fetch --depth 1 origin "$BRANCH"
       git -C "$dest" checkout -q "$BRANCH"
-      git -C "$dest" reset --hard "origin/$BRANCH"
+      git -C "$dest" merge --ff-only "origin/$BRANCH"
     elif [[ -L "$dest" ]]; then
       echo "ERROR: $dest is a symlink; remove it or use --dir" >&2
       exit 1
+    elif [[ -e "$dest" ]]; then
+      echo "ERROR: refusing to replace existing non-git path: $dest" >&2
+      echo "Choose another location with --dir, or move the existing path first." >&2
+      exit 1
     else
-      rm -rf "$dest"
       mkdir -p "$(dirname "$dest")"
       git clone --depth 1 --branch "$BRANCH" "$REPO_URL" "$dest"
     fi
